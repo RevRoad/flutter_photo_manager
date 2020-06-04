@@ -520,7 +520,7 @@
                         return;
                       }
 
-                      NSString *path = [self writeFullFileWithAssetId:asset imageData:UIImageJPEGRepresentation(image, 1.0)];
+                      NSString *path = [self writeFullFileWithAssetId:asset imageData:UIImageJPEGRepresentation(image, 0.9)];
 
                       [handler reply:path];
                   }];
