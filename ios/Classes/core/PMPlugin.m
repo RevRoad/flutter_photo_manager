@@ -116,8 +116,9 @@
         NSUInteger height = [call.arguments[@"height"] unsignedIntegerValue];
         NSUInteger format = [call.arguments[@"format"] unsignedIntegerValue];
         NSUInteger quality = [call.arguments[@"quality"] unsignedIntegerValue];
+        BOOL exactSize = [call.arguments[@"exactSize"] boolValue];
 
-        [manager getThumbWithId:id width:width height:height format:format quality:quality resultHandler:handler];
+        [manager getThumbWithId:id width:width height:height format:format quality:quality exactSize:exactSize resultHandler:handler];
 
       } else if ([call.method isEqualToString:@"getFullFile"]) {
         NSString *id = call.arguments[@"id"];

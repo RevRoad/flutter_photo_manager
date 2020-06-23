@@ -67,7 +67,7 @@ class PhotoManager(private val context: Context) {
     return dbUtils.getAssetFromGalleryIdRange(context, gId, start, end, type, timestamp, option)
   }
 
-  fun getThumb(id: String, width: Int, height: Int, format: Int, quality: Int, resultHandler: ResultHandler) {
+  fun getThumb(id: String, width: Int, height: Int, format: Int, quality: Int, exactSize: Boolean, resultHandler: ResultHandler) {
     try {
       if (!isAndroidQ) {
         val asset = dbUtils.getAssetEntity(context, id)
@@ -75,7 +75,7 @@ class PhotoManager(private val context: Context) {
           resultHandler.replyError("The asset not found!")
           return
         }
-        ThumbnailUtil.getThumbnailByGlide(context, asset.path, width, height, format, quality, resultHandler.result)
+        ThumbnailUtil.getThumbnailByGlide(context, asset.path, width, height, format, quality, exactSize, resultHandler.result)
       } else {
         // need use android Q  MediaStore thumbnail api
 
@@ -83,7 +83,7 @@ class PhotoManager(private val context: Context) {
         val type = asset?.type
         val uri = dbUtils.getThumbUri(context, id, width, height, type)
                 ?: throw RuntimeException("Cannot load uri of $id.")
-        ThumbnailUtil.getThumbOfUri(context, uri, width, height, format, quality) {
+        ThumbnailUtil.getThumbOfUri(context, uri, width, height, format, quality, exactSize) {
           resultHandler.reply(it)
         }
       }
@@ -203,7 +203,7 @@ class PhotoManager(private val context: Context) {
       resultHandler.reply(null)
     }
   }
-  
+
   fun moveToGallery(assetId: String, albumId: String, resultHandler: ResultHandler) {
     try {
       val assetEntity = dbUtils.moveToGallery(context, assetId, albumId)
@@ -217,14 +217,14 @@ class PhotoManager(private val context: Context) {
       resultHandler.reply(null)
     }
   }
-  
+
   fun removeAllExistsAssets(resultHandler: ResultHandler) {
     val result = dbUtils.removeAllExistsAssets(context)
     resultHandler.reply(result)
   }
-  
+
   fun getAssetProperties(id: String): AssetEntity? {
     return dbUtils.getAssetEntity(context, id)
   }
-  
+
 }

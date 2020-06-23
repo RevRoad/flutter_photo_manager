@@ -173,6 +173,7 @@ class PhotoManager {
     int height = 150,
     ThumbFormat format = ThumbFormat.jpeg,
     int quality = 100,
+    bool exactSize = false,
   }) {
     return _plugin.getThumb(
       id: id,
@@ -180,6 +181,7 @@ class PhotoManager {
       height: height,
       format: format,
       quality: quality,
+      exactSize: exactSize,
     );
   }
 

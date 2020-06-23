@@ -294,24 +294,27 @@
   [cacheContainer clearCache];
 }
 
-- (void)getThumbWithId:(NSString *)id width:(NSUInteger)width height:(NSUInteger)height format:(NSUInteger)format quality:(NSUInteger)quality resultHandler:(ResultHandler *)handler {
+- (void)getThumbWithId:(NSString *)id width:(NSUInteger)width height:(NSUInteger)height format:(NSUInteger)format quality:(NSUInteger)quality exactSize:(BOOL)exactSize resultHandler:(ResultHandler *)handler {
   PMAssetEntity *entity = [self getAssetEntity:id];
   if (entity && entity.phAsset) {
     PHAsset *asset = entity.phAsset;
-    [self fetchThumb:asset width:width height:height format:format quality:quality resultHandler:handler];
+    [self fetchThumb:asset width:width height:height format:format quality:quality exactSize:exactSize resultHandler:handler];
   } else {
     [handler replyError:@"asset is not found"];
   }
 }
 
-- (void)fetchThumb:(PHAsset *)asset width:(NSUInteger)width height:(NSUInteger)height format:(NSUInteger)format quality:(NSUInteger)quality resultHandler:(ResultHandler *)handler {
+- (void)fetchThumb:(PHAsset *)asset width:(NSUInteger)width height:(NSUInteger)height format:(NSUInteger)format quality:(NSUInteger)quality exactSize:(BOOL)exactSize resultHandler:(ResultHandler *)handler {
   PHImageManager *manager = PHImageManager.defaultManager;
   PHImageRequestOptions *options = [PHImageRequestOptions new];
+  if (exactSize) {
+    options.resizeMode = PHImageRequestOptionsResizeModeExact;
+  }
   [options setNetworkAccessAllowed:YES];
   [options setProgressHandler:^(double progress, NSError *error, BOOL *stop,
           NSDictionary *info) {
       if (progress == 1.0) {
-        [self fetchThumb:asset width:width height:height format:format quality:quality resultHandler:handler];
+        [self fetchThumb:asset width:width height:height format:format quality:quality exactSize:exactSize resultHandler:handler];
       }
   }];
   [manager requestImageForAsset:asset

@@ -32,7 +32,7 @@ typedef void (^AssetResult)(PMAssetEntity *);
 
 - (void)clearCache;
 
-- (void)getThumbWithId:(NSString *)id width:(NSUInteger)width height:(NSUInteger)height format:(NSUInteger)format quality:(NSUInteger)quality resultHandler:(ResultHandler *)handler;
+- (void)getThumbWithId:(NSString *)id width:(NSUInteger)width height:(NSUInteger)height format:(NSUInteger)format quality:(NSUInteger)quality exactSize:(BOOL)exactSize resultHandler:(ResultHandler *)handler;
 
 - (void)getFullSizeFileWithId:(NSString *)id
                      isOrigin:(BOOL)isOrigin

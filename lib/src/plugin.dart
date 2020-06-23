@@ -86,6 +86,7 @@ class Plugin with BasePlugin, IosPlugin, AndroidPlugin {
     int height = 100,
     ThumbFormat format,
     int quality,
+    bool exactSize,
   }) {
     return _channel.invokeMethod("getThumb", {
       "width": width,
@@ -93,6 +94,7 @@ class Plugin with BasePlugin, IosPlugin, AndroidPlugin {
       "id": id,
       "format": format.index,
       "quality": quality,
+      "exactSize": exactSize,
     });
   }
 
