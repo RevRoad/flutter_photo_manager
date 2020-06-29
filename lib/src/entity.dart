@@ -275,6 +275,8 @@ class AssetEntity {
     ThumbFormat format = ThumbFormat.jpeg,
     int quality = 100,
     bool exactSize = false,
+    bool download = false,
+    String channelName,
   }) {
     assert(width > 0 && height > 0, "The width and height must better 0.");
     assert(format != null, "The format must not be null.");
@@ -292,6 +294,8 @@ class AssetEntity {
       format: format,
       quality: quality,
       exactSize: exactSize,
+      download: download,
+      channelName: channelName,
     );
   }
 

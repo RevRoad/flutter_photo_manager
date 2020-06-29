@@ -4,6 +4,7 @@
 
 #import "PMFileHelper.h"
 #import <Foundation/Foundation.h>
+#import <Flutter/Flutter.h>
 #import <Photos/Photos.h>
 
 typedef void (^ChangeIds)(NSArray<NSString *> *);
@@ -17,6 +18,9 @@ typedef void (^ChangeIds)(NSArray<NSString *> *);
 typedef void (^AssetResult)(PMAssetEntity *);
 
 @interface PMManager : NSObject
+
+//@property(nonatomic, readwrite, strong) NSObject<FlutterBinaryMessenger> *messenger;
+//@property(nonatomic, readwrite, strong) NSObject<FlutterMethodCodec>* codec;
 
 - (BOOL)isAuth;
 
@@ -32,7 +36,7 @@ typedef void (^AssetResult)(PMAssetEntity *);
 
 - (void)clearCache;
 
-- (void)getThumbWithId:(NSString *)id width:(NSUInteger)width height:(NSUInteger)height format:(NSUInteger)format quality:(NSUInteger)quality exactSize:(BOOL)exactSize resultHandler:(ResultHandler *)handler;
+- (void)getThumbWithId:(NSString *)id width:(NSUInteger)width height:(NSUInteger)height format:(NSUInteger)format quality:(NSUInteger)quality exactSize:(BOOL)exactSize channelName:(NSString *)channelName download:(BOOL)download resultHandler:(ResultHandler *)handler;
 
 - (void)getFullSizeFileWithId:(NSString *)id
                      isOrigin:(BOOL)isOrigin
@@ -75,4 +79,5 @@ typedef void (^AssetResult)(PMAssetEntity *);
 - (void)removeCollectionWithId:(NSString *)id type:(int)type block:(void (^)(NSString *))block;
 
 - (BOOL)favoriteWithId:(NSString *)id favorite:(BOOL)favorite;
+
 @end

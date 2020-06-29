@@ -174,6 +174,8 @@ class PhotoManager {
     ThumbFormat format = ThumbFormat.jpeg,
     int quality = 100,
     bool exactSize = false,
+    bool download = false,
+    String channelName,
   }) {
     return _plugin.getThumb(
       id: id,
@@ -182,7 +184,13 @@ class PhotoManager {
       format: format,
       quality: quality,
       exactSize: exactSize,
+      download: download,
+      channelName: channelName,
     );
+  }
+
+  static cancelRequest(int requestId) {
+    _plugin.cancelRequest(requestId);
   }
 
   static Future<bool> _assetExistsWithId(String id) {

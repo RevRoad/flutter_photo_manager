@@ -25,6 +25,7 @@
   if (self) {
     __isAuth = NO;
     cacheContainer = [PMCacheContainer new];
+//    _codec = [FlutterStandardMethodCodec sharedInstance];
   }
 
   return self;
@@ -294,54 +295,158 @@
   [cacheContainer clearCache];
 }
 
-- (void)getThumbWithId:(NSString *)id width:(NSUInteger)width height:(NSUInteger)height format:(NSUInteger)format quality:(NSUInteger)quality exactSize:(BOOL)exactSize resultHandler:(ResultHandler *)handler {
-  PMAssetEntity *entity = [self getAssetEntity:id];
-  if (entity && entity.phAsset) {
-    PHAsset *asset = entity.phAsset;
-    [self fetchThumb:asset width:width height:height format:format quality:quality exactSize:exactSize resultHandler:handler];
-  } else {
-    [handler replyError:@"asset is not found"];
-  }
+- (void)returnError:(NSError *)error resultHandler:(ResultHandler *)handler {
+    FlutterError *flutterError = [FlutterError errorWithCode:[@(error.code) stringValue]
+                                                     message:error.domain
+                                                     details:error.localizedDescription];
+    [handler reply:flutterError];
+};
+
+
+- (void)getThumbWithId:(NSString *)id width:(NSUInteger)width height:(NSUInteger)height format:(NSUInteger)format quality:(NSUInteger)quality exactSize:(BOOL)exactSize channelName:(NSString *)channelName download:(BOOL)download resultHandler:(ResultHandler *)handler {
+    PMAssetEntity *entity = [self getAssetEntity:id];
+    if (entity && entity.phAsset) {
+        PHAsset *asset = entity.phAsset;
+        [self fetchThumb:asset width:width height:height format:format quality:quality exactSize:exactSize channelName:channelName download:download resultHandler:handler];
+    } else {
+        [handler replyError:@"asset is not found"];
+    }
 }
 
-- (void)fetchThumb:(PHAsset *)asset width:(NSUInteger)width height:(NSUInteger)height format:(NSUInteger)format quality:(NSUInteger)quality exactSize:(BOOL)exactSize resultHandler:(ResultHandler *)handler {
-  PHImageManager *manager = PHImageManager.defaultManager;
-  PHImageRequestOptions *options = [PHImageRequestOptions new];
-  if (exactSize) {
-    options.resizeMode = PHImageRequestOptionsResizeModeExact;
-  }
-  [options setNetworkAccessAllowed:YES];
-  [options setProgressHandler:^(double progress, NSError *error, BOOL *stop,
-          NSDictionary *info) {
-      if (progress == 1.0) {
-        [self fetchThumb:asset width:width height:height format:format quality:quality exactSize:exactSize resultHandler:handler];
-      }
-  }];
-  [manager requestImageForAsset:asset
-                     targetSize:CGSizeMake(width, height)
-                    contentMode:PHImageContentModeAspectFill
-                        options:options
-                  resultHandler:^(UIImage *result, NSDictionary *info) {
-                      BOOL downloadFinished = [PMManager isDownloadFinish:info];
+- (void)fetchThumb:(PHAsset *)asset width:(NSUInteger)width height:(NSUInteger)height format:(NSUInteger)format quality:(NSUInteger)quality exactSize:(BOOL)exactSize channelName:(NSString *)channelName download:(BOOL)download resultHandler:(ResultHandler *)handler {
+    PHImageManager *manager = PHImageManager.defaultManager;
+    PHImageRequestOptions *options = [PHImageRequestOptions new];
+    if (exactSize) {
+        options.resizeMode = PHImageRequestOptionsResizeModeExact;
+        options.deliveryMode = PHImageRequestOptionsDeliveryModeHighQualityFormat;
+    }
+    //    options.deliveryMode = PHImageRequestOptionsDeliveryModeOpportunistic;
+    [options setNetworkAccessAllowed:download];
+//    [options setProgressHandler:^(double progress, NSError *error, BOOL *stop, NSDictionary *info) {
+//        NSLog(@"progress: %f. id: %@. request: %@", progress, asset.localIdentifier, info[PHImageResultRequestIDKey]);
+//        if (error) {
+//            NSLog(@"Error downloading image: %@", error);
+//        }
+//        else if (progress == 1.0) {
+////            [self fetchThumb:asset width:width height:height format:format quality:quality exactSize:exactSize channelName:channelName resultHandler:handler];
+//        }
+//        else if (channelName) {
+//            NSDictionary *message = @{
+//                @"progress": @(progress),
+//            };
+//            [self.messenger sendOnChannel:channelName message:[self.codec encodeSuccessEnvelope:message]];
+//        }
+//    }];
 
-                      if (!downloadFinished) {
-                        return;
-                      }
+    void (^returnImageData)(UIImage *) = ^(UIImage *image) {
+        NSData *imageData;
+        if (format == 1) {
+            imageData = UIImagePNGRepresentation(image);
+        } else {
+            double qualityValue = (double) quality / 100.0;
+            imageData = UIImageJPEGRepresentation(image, qualityValue);
+        }
+        FlutterStandardTypedData *data = [FlutterStandardTypedData typedDataWithBytes:imageData];
+        [handler reply:data];
+    };
 
-                      if ([handler isReplied]) {
-                        return;
-                      }
-                      NSData *imageData;
-                      if (format == 1) {
-                        imageData = UIImagePNGRepresentation(result);
-                      } else {
-                        double qualityValue = (double) quality / 100.0;
-                        imageData = UIImageJPEGRepresentation(result, qualityValue);
-                      }
-
-                      FlutterStandardTypedData *data = [FlutterStandardTypedData typedDataWithBytes:imageData];
-                      [handler reply:data];
-                  }];
+    PHImageRequestID requestId =
+    [manager requestImageForAsset:asset
+                       targetSize:CGSizeMake(width, height)
+                      contentMode:PHImageContentModeAspectFill
+                          options:options
+                    resultHandler:^(UIImage *result, NSDictionary *info) {
+        NSError *error = info[PHImageErrorKey];
+//        if (channelName) {
+//            NSDictionary *message;
+//            if (result) {
+//                NSData *imageData;
+//                if (format == 1) {
+//                    imageData = UIImagePNGRepresentation(result);
+//                } else {
+//                    double qualityValue = (double) quality / 100.0;
+//                    imageData = UIImageJPEGRepresentation(result, qualityValue);
+//                }
+//                message = @{
+//                    @"assetBytes": imageData,
+//                    @"isDegraded": info[PHImageResultIsDegradedKey],
+//                    @"requestId": info[PHImageResultRequestIDKey],
+//                };
+//            }
+//            else if (error && !info[PHImageCancelledKey]) {
+//                FlutterError *flutterError = [FlutterError errorWithCode:[@(error.code) stringValue]
+//                                                                 message:error.domain
+//                                                                 details:error.localizedDescription];
+//                [self.messenger sendOnChannel:channelName message:[self.codec encodeErrorEnvelope:flutterError]];
+//                PHImageRequestOptions *options = [PHImageRequestOptions new];
+//                options.deliveryMode = PHImageRequestOptionsDeliveryModeHighQualityFormat;
+//                // 256 seems to be a magic number
+//                // https://openradar.appspot.com/25181601
+//                [manager requestImageForAsset:asset
+//                                   targetSize:CGSizeMake(256, 256)
+//                                  contentMode:PHImageContentModeAspectFill
+//                                      options:options
+//                                resultHandler:^(UIImage *result, NSDictionary *info) {
+//                    if (result) {
+//                        double qualityValue = (double) quality / 100.0;
+//                        NSData *imageData = UIImageJPEGRepresentation(result, qualityValue);
+//                        NSDictionary *message = @{
+//                            @"assetBytes": imageData,
+//                            @"isDegraded": @YES,
+//                            @"size": @256,
+//                        };
+//                        [self.messenger sendOnChannel:channelName message:[self.codec encodeSuccessEnvelope:message]];
+//                    }
+//                }];
+//            }
+//            else if (info[PHImageResultIsInCloudKey]) {
+//                message = @{
+//                    @"isInCloud": info[PHImageResultIsInCloudKey],
+//                };
+//            }
+//            if (message) {
+//                [self.messenger sendOnChannel:channelName message:[self.codec encodeSuccessEnvelope:message]];
+//            }
+//        }
+//        else {
+        if (error) {
+            if (!download && [info[PHImageResultIsInCloudKey] isEqualToNumber:@1]) {
+                // image is stored in iCloud and we are not downloading the original
+                // request the highest quality available on disk, which seems to be 256
+                // https://openradar.appspot.com/25181601
+                // but maybe we should try a few different sizes
+                PHImageRequestOptions *options = [PHImageRequestOptions new];
+                options.deliveryMode = PHImageRequestOptionsDeliveryModeHighQualityFormat;
+                [manager requestImageForAsset:asset
+                                   targetSize:CGSizeMake(256, 256)
+                                  contentMode:PHImageContentModeAspectFill
+                                      options:options
+                                resultHandler:^(UIImage *result, NSDictionary *info) {
+                    if (result) {
+                        returnImageData(result);
+                    }
+                    else {
+                        [self returnError:info[PHImageErrorKey] ? info[PHImageErrorKey] : error resultHandler:handler];
+                    }
+                }];
+            }
+            else {
+                [self returnError:error resultHandler:handler];
+            }
+        }
+        else {
+            BOOL downloadFinished = [PMManager isDownloadFinish:info];
+            if (!downloadFinished) {
+                return;
+            }
+            returnImageData(result);
+        }
+//        }
+    }];
+//    if (channelName) {
+//        [handler reply:nil];
+//    }
+//    NSLog(@"requestId: %d. fetchThumb: %@. channelName: %@. exactSize: %@. download: %@. width: %ld. height: %ld", requestId, asset.localIdentifier, channelName, exactSize ? @"YES" : @"NO", download ? @"YES" : @"NO", width, height);
 }
 
 - (void)getFullSizeFileWithId:(NSString *)id
@@ -498,35 +603,29 @@
   PHImageRequestOptions *options = [PHImageRequestOptions new];
   options.synchronous = YES;
   options.version = PHImageRequestOptionsVersionCurrent;
-
-  [options setNetworkAccessAllowed:YES];
-  [options setProgressHandler:^(double progress, NSError *error, BOOL *stop,
-          NSDictionary *info) {
-      if (progress == 1.0) {
-        [self fetchFullSizeImageFile:asset resultHandler:handler];
-      }
-  }];
+  options.networkAccessAllowed = YES;
+//  [options setProgressHandler:^(double progress, NSError *error, BOOL *stop, NSDictionary *info) {
+//      if (progress == 1.0) {
+////        [self fetchFullSizeImageFile:asset resultHandler:handler];
+//      }
+//  }];
 
   [manager requestImageForAsset:asset
                      targetSize:PHImageManagerMaximumSize
                     contentMode:PHImageContentModeDefault
                         options:options
-                  resultHandler:^(UIImage *_Nullable image,
-                          NSDictionary *_Nullable info) {
-
-                      BOOL downloadFinished = [PMManager isDownloadFinish:info];
-                      if (!downloadFinished) {
-                        return;
-                      }
-
-                      if ([handler isReplied]) {
-                        return;
-                      }
-
-                      NSString *path = [self writeFullFileWithAssetId:asset imageData:UIImageJPEGRepresentation(image, 0.9)];
-
-                      [handler reply:path];
-                  }];
+                  resultHandler:^(UIImage *_Nullable image, NSDictionary *_Nullable info) {
+      NSError *error = info[PHImageErrorKey];
+      if (error) {
+          [self returnError:error resultHandler:handler];
+      }
+      BOOL downloadFinished = [PMManager isDownloadFinish:info];
+      if (!downloadFinished) {
+          return;
+      }
+      NSString *path = [self writeFullFileWithAssetId:asset imageData:UIImageJPEGRepresentation(image, 0.95)];
+      [handler reply:path];
+  }];
 }
 
 - (NSString *)writeFullFileWithAssetId:(PHAsset *)asset imageData:(NSData *)imageData {
@@ -1196,4 +1295,5 @@
 
   return YES;
 }
+
 @end

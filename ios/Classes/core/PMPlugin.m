@@ -17,14 +17,17 @@
 - (void)registerPlugin:(NSObject <FlutterPluginRegistrar> *)registrar {
   [self initNotificationManager:registrar];
 
+  NSObject<FlutterBinaryMessenger> *messenger = [registrar messenger];
   FlutterMethodChannel *channel =
           [FlutterMethodChannel methodChannelWithName:@"top.kikt/photo_manager"
-                                      binaryMessenger:[registrar messenger]];
-  [self setManager:[PMManager new]];
+                                      binaryMessenger:messenger];
+  PMManager *manager = [PMManager new];
+//  manager.messenger = messenger;
   [channel
           setMethodCallHandler:^(FlutterMethodCall *call, FlutterResult result) {
               [self onMethodCall:call result:result];
           }];
+  [self setManager:manager];
 }
 
 - (void)initNotificationManager:(NSObject <FlutterPluginRegistrar> *)registrar {
@@ -117,8 +120,18 @@
         NSUInteger format = [call.arguments[@"format"] unsignedIntegerValue];
         NSUInteger quality = [call.arguments[@"quality"] unsignedIntegerValue];
         BOOL exactSize = [call.arguments[@"exactSize"] boolValue];
+        BOOL download = [call.arguments[@"download"] boolValue];
+        NSString *channelName = call.arguments[@"channelName"];
+        if (channelName == (NSString *)[NSNull null]) {
+            channelName = nil;
+        }
 
-        [manager getThumbWithId:id width:width height:height format:format quality:quality exactSize:exactSize resultHandler:handler];
+          [manager getThumbWithId:id width:width height:height format:format quality:quality exactSize:exactSize channelName:channelName download:download resultHandler:handler];
+
+      } else if ([call.method isEqualToString:@"cancelRequest"]) {
+          PHImageRequestID requestId = [call.arguments[@"requestId"] intValue];
+          PHImageManager *manager = PHImageManager.defaultManager;
+          [manager cancelImageRequest:requestId];
 
       } else if ([call.method isEqualToString:@"getFullFile"]) {
         NSString *id = call.arguments[@"id"];
