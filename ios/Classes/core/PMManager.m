@@ -15,6 +15,19 @@
 #import "PMFolderUtils.h"
 #import "MD5Utils.h"
 
+
+@implementation UIImage (Crop)
+
+- (UIImage *)crop:(CGRect)rect {
+    CGImageRef imageRef = CGImageCreateWithImageInRect([self CGImage], rect);
+    UIImage *result = [UIImage imageWithCGImage:imageRef];
+    CGImageRelease(imageRef);
+    return result;
+}
+
+@end
+
+
 @implementation PMManager {
   BOOL __isAuth;
   PMCacheContainer *cacheContainer;
@@ -320,7 +333,7 @@
         options.resizeMode = PHImageRequestOptionsResizeModeExact;
         options.deliveryMode = PHImageRequestOptionsDeliveryModeHighQualityFormat;
     }
-    //    options.deliveryMode = PHImageRequestOptionsDeliveryModeOpportunistic;
+    options.version = PHImageRequestOptionsVersionCurrent;
     [options setNetworkAccessAllowed:download];
 //    [options setProgressHandler:^(double progress, NSError *error, BOOL *stop, NSDictionary *info) {
 //        NSLog(@"progress: %f. id: %@. request: %@", progress, asset.localIdentifier, info[PHImageResultRequestIDKey]);
@@ -339,6 +352,17 @@
 //    }];
 
     void (^returnImageData)(UIImage *) = ^(UIImage *image) {
+        if (exactSize && (image.size.width != width || image.size.height != height)) {
+            NSUInteger minSide = MIN(image.size.width, image.size.height);
+            NSUInteger cropWidth = MIN(minSide, width);
+            NSUInteger cropHeight = MIN(minSide, height);
+            CGRect cropRect = CGRectMake(
+                                         (int)(image.size.width - cropWidth) / 2,
+                                         (int)(image.size.height - cropHeight) / 2,
+                                         cropWidth, cropHeight);
+//            NSLog(@"Wanting exact size and Apple didn't give us the right size. image.size: %@. desired width: %ld height: %ld. cropWidth: %ld, cropHeight: %ld. Attempting to crop with rect: %@. image before: %@", NSStringFromCGSize(image.size), width, height, cropWidth, cropHeight, NSStringFromCGRect(cropRect), image);
+            image = [image crop:cropRect];
+        }
         NSData *imageData;
         if (format == 1) {
             imageData = UIImagePNGRepresentation(image);
@@ -357,58 +381,6 @@
                           options:options
                     resultHandler:^(UIImage *result, NSDictionary *info) {
         NSError *error = info[PHImageErrorKey];
-//        if (channelName) {
-//            NSDictionary *message;
-//            if (result) {
-//                NSData *imageData;
-//                if (format == 1) {
-//                    imageData = UIImagePNGRepresentation(result);
-//                } else {
-//                    double qualityValue = (double) quality / 100.0;
-//                    imageData = UIImageJPEGRepresentation(result, qualityValue);
-//                }
-//                message = @{
-//                    @"assetBytes": imageData,
-//                    @"isDegraded": info[PHImageResultIsDegradedKey],
-//                    @"requestId": info[PHImageResultRequestIDKey],
-//                };
-//            }
-//            else if (error && !info[PHImageCancelledKey]) {
-//                FlutterError *flutterError = [FlutterError errorWithCode:[@(error.code) stringValue]
-//                                                                 message:error.domain
-//                                                                 details:error.localizedDescription];
-//                [self.messenger sendOnChannel:channelName message:[self.codec encodeErrorEnvelope:flutterError]];
-//                PHImageRequestOptions *options = [PHImageRequestOptions new];
-//                options.deliveryMode = PHImageRequestOptionsDeliveryModeHighQualityFormat;
-//                // 256 seems to be a magic number
-//                // https://openradar.appspot.com/25181601
-//                [manager requestImageForAsset:asset
-//                                   targetSize:CGSizeMake(256, 256)
-//                                  contentMode:PHImageContentModeAspectFill
-//                                      options:options
-//                                resultHandler:^(UIImage *result, NSDictionary *info) {
-//                    if (result) {
-//                        double qualityValue = (double) quality / 100.0;
-//                        NSData *imageData = UIImageJPEGRepresentation(result, qualityValue);
-//                        NSDictionary *message = @{
-//                            @"assetBytes": imageData,
-//                            @"isDegraded": @YES,
-//                            @"size": @256,
-//                        };
-//                        [self.messenger sendOnChannel:channelName message:[self.codec encodeSuccessEnvelope:message]];
-//                    }
-//                }];
-//            }
-//            else if (info[PHImageResultIsInCloudKey]) {
-//                message = @{
-//                    @"isInCloud": info[PHImageResultIsInCloudKey],
-//                };
-//            }
-//            if (message) {
-//                [self.messenger sendOnChannel:channelName message:[self.codec encodeSuccessEnvelope:message]];
-//            }
-//        }
-//        else {
         if (error) {
             if (!download && [info[PHImageResultIsInCloudKey] isEqualToNumber:@1]) {
                 // image is stored in iCloud and we are not downloading the original
@@ -441,12 +413,8 @@
             }
             returnImageData(result);
         }
-//        }
     }];
-//    if (channelName) {
-//        [handler reply:nil];
-//    }
-//    NSLog(@"requestId: %d. fetchThumb: %@. channelName: %@. exactSize: %@. download: %@. width: %ld. height: %ld", requestId, asset.localIdentifier, channelName, exactSize ? @"YES" : @"NO", download ? @"YES" : @"NO", width, height);
+//    NSLog(@"requestId: %d. fetchThumb: %@. channelName: %@. exactSize: %@. download: %@. width: %ld. height: %ld. asset.width: %lu. asset.height: %lu", requestId, asset.localIdentifier, channelName, exactSize ? @"YES" : @"NO", download ? @"YES" : @"NO", width, height, asset.pixelWidth, asset.pixelHeight);
 }
 
 - (void)getFullSizeFileWithId:(NSString *)id
@@ -587,13 +555,12 @@
                                            attributes:@{}
                                                 error:nil];
 
-  NSLog(@"cache path = %@", dirPath);
-
 //  NSString *title = [asset title];
   NSMutableString *path = [NSMutableString stringWithString:dirPath];
   NSString *filename = [asset.localIdentifier stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
   NSString *extName = [asset title];
   [path appendFormat:@"/%@%@.%@", filename, isOrigin ? @"_origin" : @"", extName];
+//  NSLog(@"dirPath: %@. path: %@", dirPath, path);
   return path;
 }
 
@@ -1297,3 +1264,4 @@
 }
 
 @end
+
