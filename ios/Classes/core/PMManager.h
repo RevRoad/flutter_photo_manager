@@ -14,13 +14,17 @@ typedef void (^ChangeIds)(NSArray<NSString *> *);
 @class ResultHandler;
 @class PMFilterOption;
 @class PMFilterOptionGroup;
+@class PMThumbLoadOption;
+
+#import "PMProgressHandlerProtocol.h"
+#import "PMResultHandler.h"
+#import "PMConvertProtocol.h"
 
 typedef void (^AssetResult)(PMAssetEntity *);
 
 @interface PMManager : NSObject
 
-//@property(nonatomic, readwrite, strong) NSObject<FlutterBinaryMessenger> *messenger;
-//@property(nonatomic, readwrite, strong) NSObject<FlutterMethodCodec>* codec;
+@property(nonatomic, strong) NSObject <PMConvertProtocol> *converter;
 
 - (BOOL)isAuth;
 
@@ -36,11 +40,9 @@ typedef void (^AssetResult)(PMAssetEntity *);
 
 - (void)clearCache;
 
-- (void)getThumbWithId:(NSString *)id width:(NSUInteger)width height:(NSUInteger)height format:(NSUInteger)format quality:(NSUInteger)quality exactSize:(BOOL)exactSize channelName:(NSString *)channelName download:(BOOL)download resultHandler:(ResultHandler *)handler;
+- (void)getThumbWithId:(NSString *)id1 option:(PMThumbLoadOption *)option resultHandler:(NSObject <PMResultHandler> *)handler progressHandler:(NSObject <PMProgressHandlerProtocol> *)progressHandler;
 
-- (void)getFullSizeFileWithId:(NSString *)id
-                     isOrigin:(BOOL)isOrigin
-                resultHandler:(ResultHandler *)handler;
+- (void)getFullSizeFileWithId:(NSString *)id isOrigin:(BOOL)isOrigin resultHandler:(NSObject <PMResultHandler> *)handler progressHandler:(NSObject <PMProgressHandlerProtocol> *)progressHandler;
 
 - (PMAssetPathEntity *)fetchPathProperties:(NSString *)id type:(int)type filterOption:(PMFilterOptionGroup *)filterOption;
 
@@ -62,7 +64,7 @@ typedef void (^AssetResult)(PMAssetEntity *);
 
 - (NSString*)getTitleAsyncWithAssetId: (NSString *) assetId;
 
-- (void)getMediaUrl:(NSString *)assetId resultHandler:(ResultHandler *)handler;
+- (void)getMediaUrl:(NSString *)assetId resultHandler:(NSObject <PMResultHandler> *)handler;
 
 - (NSArray<PMAssetPathEntity *> *)getSubPathWithId:(NSString *)id type:(int)type albumType:(int)albumType option:(PMFilterOptionGroup *)option;
 
@@ -80,4 +82,11 @@ typedef void (^AssetResult)(PMAssetEntity *);
 
 - (BOOL)favoriteWithId:(NSString *)id favorite:(BOOL)favorite;
 
+- (void)clearFileCache;
+
+- (void)requestCacheAssetsThumb:(NSArray *)identifiers option:(PMThumbLoadOption *)option;
+
+- (void)cancelCacheRequests;
+
+- (void)injectModifyToDate:(PMAssetPathEntity *)path;
 @end

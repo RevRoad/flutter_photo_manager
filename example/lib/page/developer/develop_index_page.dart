@@ -25,37 +25,49 @@ class _DeveloperIndexPageState extends State<DeveloperIndexPage> {
       ),
       body: ListView(
         children: <Widget>[
-          RaisedButton(
+          ElevatedButton(
             child: Text("Show iOS create folder example."),
             onPressed: () => navToWidget(CreateFolderExample()),
           ),
-          RaisedButton(
+          ElevatedButton(
             child: Text("Test edit image"),
             onPressed: () => navToWidget(EditAssetPage()),
           ),
-          RaisedButton(
+          ElevatedButton(
             child: Text("Show Android remove not exists asset example."),
             onPressed: () => navToWidget(RemoveAndroidNotExistsExample()),
           ),
-          RaisedButton(
+          ElevatedButton(
             child: Text("upload file to local to test EXIF."),
             onPressed: _upload,
           ),
-          RaisedButton(
+          ElevatedButton(
             child: Text("Save video to photos."),
             onPressed: _saveVideo,
           ),
-          RaisedButton(
+          ElevatedButton(
             child: Text("Open test title page"),
             onPressed: _navigatorSpeedOfTitle,
           ),
-          RaisedButton(
+          ElevatedButton(
             child: Text("Open setting."),
             onPressed: _openSetting,
           ),
-          RaisedButton(
+          ElevatedButton(
             child: Text("Create Entity ById"),
             onPressed: () => navToWidget(CreateEntityById()),
+          ),
+          ElevatedButton(
+            child: Text("Clear file caches"),
+            onPressed: _clearFileCaches,
+          ),
+          ElevatedButton(
+            child: Text("Request permission extend"),
+            onPressed: _requestPermssionExtend,
+          ),
+          ElevatedButton(
+            child: Text("PresentLimited"),
+            onPressed: _persentLimited,
           ),
         ],
       ),
@@ -72,10 +84,13 @@ class _DeveloperIndexPageState extends State<DeveloperIndexPage> {
     // }
 
     final file = await asset.originFile;
+    if (file == null) {
+      return;
+    }
 
     print("file length = ${file.lengthSync()}");
 
-    http.BaseClient client = http.Client();
+    http.Client client = http.Client();
     final req = http.MultipartRequest(
       "post",
       Uri.parse("http://172.16.100.7:10001/upload/file"),
@@ -136,5 +151,18 @@ class _DeveloperIndexPageState extends State<DeveloperIndexPage> {
 
   void _openSetting() {
     PhotoManager.openSetting();
+  }
+
+  void _clearFileCaches() {
+    PhotoManager.clearFileCache();
+  }
+
+  void _requestPermssionExtend() async {
+    final state = await PhotoManager.requestPermissionExtend();
+    print('result --- state: $state');
+  }
+
+  Future<void> _persentLimited() async {
+    await PhotoManager.presentLimited();
   }
 }

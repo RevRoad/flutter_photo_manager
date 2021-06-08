@@ -1,44 +1,54 @@
 package top.kikt.imagescanner.core
 
+import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Build
 import android.util.Log
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.FutureTarget
 import top.kikt.imagescanner.core.entity.AssetEntity
 import top.kikt.imagescanner.core.entity.FilterOption
 import top.kikt.imagescanner.core.entity.GalleryEntity
-import top.kikt.imagescanner.core.utils.AndroidQDBUtils
-import top.kikt.imagescanner.core.utils.ConvertUtils
-import top.kikt.imagescanner.core.utils.DBUtils
-import top.kikt.imagescanner.core.utils.IDBUtils
-import top.kikt.imagescanner.core.utils.IDBUtils.Companion.isAndroidQ
+import top.kikt.imagescanner.core.entity.ThumbLoadOption
+import top.kikt.imagescanner.core.utils.*
 import top.kikt.imagescanner.thumb.ThumbnailUtil
 import top.kikt.imagescanner.util.LogUtils
 import top.kikt.imagescanner.util.ResultHandler
 import java.io.File
+import java.util.concurrent.Executors
 
 /// create 2019-09-05 by cai
 /// Do some business logic assembly
+@SuppressLint("LongLogTag")
 class PhotoManager(private val context: Context) {
 
   companion object {
     const val ALL_ID = "isAll"
+
+    private val threadPool = Executors.newFixedThreadPool(5)
   }
 
   var useOldApi: Boolean = false
 
   private val dbUtils: IDBUtils
-    get() = if (useOldApi || Build.VERSION.SDK_INT < 29) {
-      DBUtils
-    } else {
-      AndroidQDBUtils
+    get() {
+      return if (IDBUtils.isAndroidR) {
+        Android30DbUtils
+      } else if (useOldApi || Build.VERSION.SDK_INT < 29) {
+        DBUtils
+      } else {
+        AndroidQDBUtils
+      }
     }
 
-  fun getGalleryList(type: Int, timeStamp: Long, hasAll: Boolean, onlyAll: Boolean, option: FilterOption): List<GalleryEntity> {
+  fun getGalleryList(type: Int, hasAll: Boolean, onlyAll: Boolean, option: FilterOption): List<GalleryEntity> {
     if (onlyAll) {
-      return dbUtils.getOnlyGalleryList(context, type, timeStamp, option)
+      return dbUtils.getOnlyGalleryList(context, type, option)
     }
 
-    val fromDb = dbUtils.getGalleryList(context, type, timeStamp, option)
+    val fromDb = dbUtils.getGalleryList(context, type, option)
 
     if (!hasAll) {
       return fromDb
@@ -56,33 +66,36 @@ class PhotoManager(private val context: Context) {
     return listOf(entity) + fromDb
   }
 
-  fun getAssetList(galleryId: String, page: Int, pageCount: Int, typeInt: Int = 0, timestamp: Long, option: FilterOption): List<AssetEntity> {
+  fun getAssetList(galleryId: String, page: Int, pageCount: Int, typeInt: Int = 0, option: FilterOption): List<AssetEntity> {
     val gId = if (galleryId == ALL_ID) "" else galleryId
-    return dbUtils.getAssetFromGalleryId(context, gId, page, pageCount, typeInt, timestamp, option)
+    return dbUtils.getAssetFromGalleryId(context, gId, page, pageCount, typeInt, option)
   }
 
-
-  fun getAssetListWithRange(galleryId: String, type: Int, start: Int, end: Int, timestamp: Long, option: FilterOption): List<AssetEntity> {
+  fun getAssetListWithRange(galleryId: String, type: Int, start: Int, end: Int, option: FilterOption): List<AssetEntity> {
     val gId = if (galleryId == ALL_ID) "" else galleryId
-    return dbUtils.getAssetFromGalleryIdRange(context, gId, start, end, type, timestamp, option)
+    return dbUtils.getAssetFromGalleryIdRange(context, gId, start, end, type, option)
   }
 
-  fun getThumb(id: String, width: Int, height: Int, format: Int, quality: Int, exactSize: Boolean, resultHandler: ResultHandler) {
+  fun getThumb(id: String, option: ThumbLoadOption, resultHandler: ResultHandler) {
+    val width = option.width
+    val height = option.height
+    val quality = option.quality
+    val format = option.format
+    val exactSize = option.exactSize
     try {
-      if (!isAndroidQ) {
+      if (useFilePath()) {
         val asset = dbUtils.getAssetEntity(context, id)
         if (asset == null) {
           resultHandler.replyError("The asset not found!")
           return
         }
-        ThumbnailUtil.getThumbnailByGlide(context, asset.path, width, height, format, quality, exactSize, resultHandler.result)
+        ThumbnailUtil.getThumbnailByGlide(context, asset.path, option.width, option.height, format, quality, exactSize, resultHandler.result)
       } else {
         // need use android Q  MediaStore thumbnail api
-
         val asset = dbUtils.getAssetEntity(context, id)
         val type = asset?.type
         val uri = dbUtils.getThumbUri(context, id, width, height, type)
-                ?: throw RuntimeException("Cannot load uri of $id.")
+            ?: throw RuntimeException("Cannot load uri of $id.")
         ThumbnailUtil.getThumbOfUri(context, uri, width, height, format, quality, exactSize) {
           resultHandler.reply(it)
         }
@@ -102,7 +115,7 @@ class PhotoManager(private val context: Context) {
       return
     }
     try {
-      if (!isAndroidQ) {
+      if (useFilePath()) {
         val byteArray = File(asset.path).readBytes()
         resultHandler.reply(byteArray)
       } else {
@@ -122,9 +135,15 @@ class PhotoManager(private val context: Context) {
     dbUtils.clearCache()
   }
 
-  fun getPathEntity(id: String, type: Int, timestamp: Long, option: FilterOption): GalleryEntity? {
+
+  fun clearFileCache() {
+    ThumbnailUtil.clearCache(context)
+    dbUtils.clearFileCache(context)
+  }
+
+  fun getPathEntity(id: String, type: Int, option: FilterOption): GalleryEntity? {
     if (id == ALL_ID) {
-      val allGalleryList = dbUtils.getGalleryList(context, type, timestamp, option)
+      val allGalleryList = dbUtils.getGalleryList(context, type, option)
       return if (allGalleryList.isEmpty()) {
         null
       } else {
@@ -134,11 +153,21 @@ class PhotoManager(private val context: Context) {
           for (item in this) {
             count += item.length
           }
-          GalleryEntity(ALL_ID, "Recent", count, type, true)
+          GalleryEntity(ALL_ID, "Recent", count, type, true).apply {
+            if (option.containsPathModified) {
+              dbUtils.injectModifiedDate(context, this)
+            }
+          }
         }
       }
     }
-    return dbUtils.getGalleryEntity(context, id, type, timestamp, option)
+    val galleryEntity = dbUtils.getGalleryEntity(context, id, type, option)
+
+    if (galleryEntity != null && option.containsPathModified) {
+      dbUtils.injectModifiedDate(context, galleryEntity)
+    }
+
+    return galleryEntity
   }
 
   fun getFile(id: String, isOrigin: Boolean, resultHandler: ResultHandler) {
@@ -146,23 +175,19 @@ class PhotoManager(private val context: Context) {
     resultHandler.reply(path)
   }
 
-  fun deleteAssetWithIds(ids: List<String>): List<String> {
-    return dbUtils.deleteWithIds(context, ids)
+  fun saveImage(image: ByteArray, title: String, description: String, relativePath: String?): AssetEntity? {
+    return dbUtils.saveImage(context, image, title, description, relativePath)
   }
 
-  fun saveImage(image: ByteArray, title: String, description: String): AssetEntity? {
-    return dbUtils.saveImage(context, image, title, description)
+  fun saveImage(path: String, title: String, description: String, relativePath: String?): AssetEntity? {
+    return dbUtils.saveImage(context, path, title, description, relativePath)
   }
 
-  fun saveImage(path: String, title: String, description: String): AssetEntity? {
-    return dbUtils.saveImage(context, path, title, description)
-  }
-
-  fun saveVideo(path: String, title: String, desc: String): AssetEntity? {
+  fun saveVideo(path: String, title: String, desc: String, relativePath: String?): AssetEntity? {
     if (!File(path).exists()) {
       return null
     }
-    return dbUtils.saveVideo(context, path, title, desc)
+    return dbUtils.saveVideo(context, path, title, desc, relativePath)
   }
 
   fun assetExists(id: String, resultHandler: ResultHandler) {
@@ -175,13 +200,13 @@ class PhotoManager(private val context: Context) {
     val latLong = exifInfo?.latLong
     return if (latLong == null) {
       mapOf(
-              "lat" to 0.0,
-              "lng" to 0.0
+          "lat" to 0.0,
+          "lng" to 0.0
       )
     } else {
       mapOf(
-              "lat" to latLong[0],
-              "lng" to latLong[1]
+          "lat" to latLong[0],
+          "lng" to latLong[1]
       )
     }
   }
@@ -225,6 +250,54 @@ class PhotoManager(private val context: Context) {
 
   fun getAssetProperties(id: String): AssetEntity? {
     return dbUtils.getAssetEntity(context, id)
+  }
+
+  fun getUri(id: String): Uri? {
+    val asset = dbUtils.getAssetEntity(context, id)
+    return asset?.getUri()
+  }
+
+  private val cacheFutures = ArrayList<FutureTarget<Bitmap>>()
+
+  fun requestCache(ids: List<String>, option: ThumbLoadOption, resultHandler: ResultHandler) {
+    if (useFilePath()) {
+      val pathList = dbUtils.getAssetsPath(context, ids)
+      for (s in pathList) {
+        val future = ThumbnailUtil.requestCacheThumb(context, s, option)
+        cacheFutures.add(future)
+      }
+
+    } else {
+      val uriList = dbUtils.getAssetsUri(context, ids)
+
+      for (uri in uriList) {
+        val future = ThumbnailUtil.requestCacheThumb(context, uri, option)
+        cacheFutures.add(future)
+      }
+
+    }
+
+    resultHandler.reply(1)
+
+    val needExecuteFutures = cacheFutures.toList()
+    for (cacheFuture in needExecuteFutures) {
+      threadPool.execute {
+        if (cacheFuture.isCancelled) {
+          return@execute
+        }
+        cacheFuture.get()
+      }
+    }
+
+  }
+
+  fun cancelCacheRequests() {
+    val needCancelFutures = cacheFutures.toList()
+    cacheFutures.clear()
+    for (futureTarget in needCancelFutures) {
+      Glide.with(context).clear(futureTarget)
+    }
+
   }
 
 }

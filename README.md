@@ -27,7 +27,10 @@ If you just need a picture selector, you can choose to use [photo](https://pub.d
     - [Add to pubspec](#add-to-pubspec)
     - [import in dart code](#import-in-dart-code)
   - [Usage](#usage)
+    - [Configure your flutter project to use the plugin](#configure-your-flutter-project-to-use-the-plugin)
     - [request permission](#request-permission)
+      - [About `requestPermissionExtend`](#about-requestpermissionextend)
+      - [Limit photos](#limit-photos)
     - [you get all of asset list (gallery)](#you-get-all-of-asset-list-gallery)
       - [FilterOption](#filteroption)
     - [Get asset list from `AssetPathEntity`](#get-asset-list-from-assetpathentity)
@@ -39,7 +42,9 @@ If you just need a picture selector, you can choose to use [photo](https://pub.d
       - [Origin description](#origin-description)
       - [Create with id](#create-with-id)
     - [observer](#observer)
+    - [Clear file cache](#clear-file-cache)
     - [Experimental](#experimental)
+      - [Preload thumb](#preload-thumb)
       - [Delete item](#delete-item)
       - [Insert new item](#insert-new-item)
       - [Copy asset](#copy-asset)
@@ -48,13 +53,18 @@ If you just need a picture selector, you can choose to use [photo](https://pub.d
   - [iOS config](#ios-config)
     - [iOS plist config](#ios-plist-config)
     - [enabling localized system albums names](#enabling-localized-system-albums-names)
+    - [Cache problem of iOS](#cache-problem-of-ios)
   - [android config](#android-config)
+    - [Cache problem of android](#cache-problem-of-android)
     - [about androidX](#about-androidx)
-    - [Android Q privacy](#android-q-privacy)
+    - [Android Q (android10 , API 29)](#android-q-android10--api-29)
+    - [Android R (android 11, API30)](#android-r-android-11-api30)
     - [glide](#glide)
+    - [Remove Media Location permission](#remove-media-location-permission)
   - [common issues](#common-issues)
     - [ios build error](#ios-build-error)
   - [Some articles about to use this library](#some-articles-about-to-use-this-library)
+  - [Migration Guide](#migration-guide)
 
 ## install
 
@@ -75,19 +85,45 @@ import 'package:photo_manager/photo_manager.dart';
 
 ## Usage
 
+### Configure your flutter project to use the plugin
+
+Before using the plug-in, there are several points to note.
+Please click the link below.
+
+1. [Android](#android-config)
+2. [iOS](#ios-config)
+
 ### request permission
 
 You must get the user's permission on android/ios.
 
 ```dart
-var result = await PhotoManager.requestPermission();
-if (result) {
+var result = await PhotoManager.requestPermissionExtend();
+if (result.isAuth) {
     // success
 } else {
     // fail
     /// if result is fail, you can call `PhotoManager.openSetting();`  to open android/ios applicaton's setting to get permission
 }
 ```
+
+#### About `requestPermissionExtend`
+
+In iOS14, Apple inclue "LimitedPhotos Library" to iOS.
+
+We need use the `PhotoManager.requestPermissionExtend()` to request permission.
+
+The method will return `PermissionState`. See it in [document of Apple](https://developer.apple.com/documentation/photokit/phauthorizationstatus?language=objc).
+
+So, because of compatibility, Android also recommends using this method to request permission, use `state.isAuth`, use a to be equivalent to the previous method `requestPermission`.
+
+#### Limit photos
+
+Because apple inclue "LimitedPhotos Library" to iOS.
+
+Let the user select the visible image for app again, we can use `PhotoManager.presentLimited()` to repick again.
+
+The method is only valid when iOS14 and user authorization mode is `PermissionState.limited`, other platform will ignore.
 
 ### you get all of asset list (gallery)
 
@@ -99,7 +135,7 @@ List<AssetPathEntity> list = await PhotoManager.getAssetPathList();
 | ------------ | ---------------------------------- |
 | hasAll       | Is there an album containing "all" |
 | type         | image/video/all , default all.     |
-| filterOption | See FilterOption.                  |
+| filterOption | See [FilterOption](#FilterOption). |
 
 #### FilterOption
 
@@ -108,9 +144,13 @@ List<AssetPathEntity> list = await PhotoManager.getAssetPathList();
 | needTitle          | The title attribute of the picture must be included in android (even if it is false), it is more performance-consuming in iOS, please consider whether you need it. The default is false. |
 | sizeConstraint     | Constraints on resource size.                                                                                                                                                             |
 | durationConstraint | Constraints of time, pictures will ignore this constraint.                                                                                                                                |
-| dateTimeCond       | Includes date filtering and date sorting                                                                                                                                                  |
+| createDateTimeCond | Create date filter                                                                                                                                                                        |
+| updateDateTimeCond | Update date filter                                                                                                                                                                        |
+| orders             | The sort option, use `addOrderOption`.                                                                                                                                                    |
 
-Example see [filter_option_page.dart](https://github.com/CaiJingLong/flutter_photo_manager/example/lib/page/filter_option_page.dart).
+Example see [filter_option_page.dart](https://github.com/CaiJingLong/flutter_photo_manager/blob/master/example/lib/page/filter_option_page.dart).
+
+Most classes of FilterOption support `copyWith`.
 
 ### Get asset list from `AssetPathEntity`
 
@@ -232,9 +272,41 @@ PhotoManager.removeChangeCallback(changeNotify);
 PhotoManager.stopChangeNotify();
 ```
 
+### Clear file cache
+
+You can use `PhotoManager.clearFileCache()` to clear all of cache.
+
+The cache is generated at runtime when your call some methods.
+The following table will tell the user when the cache file will be generated.
+
+| Platform                                   | thumb | file/originFile |
+| ------------------------------------------ | ----- | --------------- |
+| Android(28 or lower)                       | Yes   | No              |
+| Android(29) (requestLegacyExternalStorage) | Yes   | No              |
+| Android(29)                                | Yes   | Yes             |
+| Android(30)                                | Yes   | No              |
+| iOS                                        | No    | Yes             |
+
 ### Experimental
 
 **Important**: The functions are not guaranteed to be fully usable, because it involves data modification, some APIs will cause irreversible deletion / movement of the data, so please use test equipment to make sure that there is no problem before using it.
+
+#### Preload thumb
+
+```dart
+PhotoCachingManager().requestCacheAssets(
+  assets: assets,
+  option: thumbOption,
+);
+```
+
+And, if you want to stop, call `PhotoCachingManager().cancelCacheRequest();`
+
+Usually, when we preview an album, we use thumbnails.
+In flutter, because `ListView.builder` and `GridView.builder` rendering that loads, but sometimes we might want to pre-load some pictures in advance to make them display faster.
+
+Now, I try to create a caching image manager (just like [PHCachingImageManager](https://developer.apple.com/documentation/photokit/phcachingimagemanager?language=objc)) to do it. In IOS, I use the system API directly, and Android will use glide and use glide's file cache to complete this step.
+This function is completely optional.
 
 #### Delete item
 
@@ -352,7 +424,36 @@ Close xCode
 Rebuild your flutter project
 Now, the system albums should be displayed according to the device's language
 
+### Cache problem of iOS
+
+iOS does not directly provide APIs to access the original files of the album. The corresponding object is PHAsset,
+
+So when you want to use file or originFile, a cache file will be generated locally.
+
+So if you are sensitive to space, please delete it after using file(just iOS), and if it is only used for preview, you can consider using thumb or thumbWithSize.
+
+```dart
+
+void useEntity(AssetEntity entity) async {
+  File file = null;
+  try{
+    file = await entity.file;
+    doUpload(); // do upload
+  }finally{
+    if(Platform.isIOS){
+      file?.deleteSync();
+    }
+  }
+}
+```
+
 ## android config
+
+### Cache problem of android
+
+Because androidQ restricts the application’s ability to directly access the resource path, some large image caches will be generated. This is because: When the file/originFile attribute is used, the plugin will save a file in the cache folder and provide it to dart:io use.
+
+Fortunately, in androidP, the path attribute can be used again, but for androidQ, this is not good news, but we can use requestLegacyExternalStorage to avoid using androidQ's api, and I also recommend you to do so. See [Android Q](#android-q-android10--api-29) to add the attribute.
 
 ### about androidX
 
@@ -362,13 +463,31 @@ This library has been migrated in version 0.2.2, but it brings a problem. Someti
 
 The complete migration method can be consulted [gitbook](https://caijinglong.gitbooks.io/migrate-flutter-to-androidx/content/).
 
-### Android Q privacy
+### Android Q (android10 , API 29)
 
 Now, the android part of the plugin uses api 29 to compile the plugin, so your android sdk environment must contain api 29 (androidQ).
 
 AndroidQ has a new privacy policy, users can't access the original file.
 
-If your compileSdkVersion and targetSdkVersion are both below 28, you can use `PhotoManager.forceOldApi` to force the old api to access the album. If you are not sure about this part, don't call this method.
+If your compileSdkVersion and targetSdkVersion are both below 28, you can use `PhotoManager.forceOldApi` to force the old api to access the album. If you are not sure about this part, don't call this method. And, I recommand you add `android:requestLegacyExternalStorage="true"` to your `AndroidManifest.xml`, just like next.
+
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="top.kikt.imagescannerexample">
+
+    <application
+        android:name="io.flutter.app.FlutterApplication"
+        android:label="image_scanner_example"
+        android:requestLegacyExternalStorage="true"
+        android:icon="@mipmap/ic_launcher">
+    </application>
+</manifest>
+
+```
+
+### Android R (android 11, API30)
+
+Unlike androidQ, this version of `requestLegacyExternalStorage` is invalid, but I still recommend that you add this attribute to make it easier to use the old API on android29 of android device.
 
 ### glide
 
@@ -384,13 +503,30 @@ rootProject.allprojects {
             resolutionStrategy.eachDependency { details ->
                 if (details.requested.group == 'com.github.bumptech.glide'
                         && details.requested.name.contains('glide')) {
-                    details.useVersion "4.11.0"
+                    details.useVersion '4.11.0'
                 }
             }
         }
     }
 }
 ```
+
+And, if you want to use ProGuard, you can see the [ProGuard of Glide](https://github.com/bumptech/glide#proguard).
+
+### Remove Media Location permission
+
+Android contains [ACCESS_MEDIA_LOCATION](https://developer.android.com/training/data-storage/shared/media#media-location-permission) permission by default.
+
+This permission is introduced in Android Q. If your app doesn't need this permission, you need to add the following node to the Android manifest in your app.
+
+```xml
+<uses-permission
+  android:name="android.permission.ACCESS_MEDIA_LOCATION"
+  tools:node="remove"
+  />
+```
+
+See code in the [example](https://github.com/CaiJingLong/flutter_photo_manager/blob/e083c7d5f4eb5f5b355a75357c0a0c3e2d534b2e/example/android/app/src/main/AndroidManifest.xml#L11-L14).
 
 ## common issues
 
@@ -422,3 +558,9 @@ Xcode's output:
 [How To: Create a custom media picker in Flutter to select photos and videos from the gallery](https://medium.com/@mhstoller.it/how-to-create-a-custom-media-picker-in-flutter-to-select-photos-and-videos-from-the-gallery-988eea477643?sk=cb395a7c20f6002f92f83374b3cc3875)
 
 [Flutter 开发日记-如何实现一个照片选择器 plugin](https://juejin.im/post/5df797706fb9a016107974fc)
+
+If you have other articles about this library, you can contact me or open PR here.
+
+## Migration Guide
+
+See [Migration-Guide](./Migration-Guide.md)
