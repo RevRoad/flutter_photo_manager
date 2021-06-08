@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:image_scanner_example/main.dart';
+
 import 'package:oktoast/oktoast.dart';
 import 'package:photo_manager/photo_manager.dart';
 
@@ -20,13 +21,33 @@ class PhotoProvider extends ChangeNotifier {
 
   bool get needTitle => _needTitle;
 
-  set needTitle(bool needTitle) {
+  set needTitle(bool? needTitle) {
+    if (needTitle == null) {
+      return;
+    }
     _needTitle = needTitle;
     notifyListeners();
   }
 
-  DateTime _startDt = DateTime.now()
-      .subtract(Duration(days: 365 * 8)); // Default Before 8 years
+  bool _containsEmptyAlbum = false;
+
+  bool get containsEmptyAlbum => _containsEmptyAlbum;
+
+  set containsEmptyAlbum(bool containsEmptyAlbum) {
+    _containsEmptyAlbum = containsEmptyAlbum;
+    notifyListeners();
+  }
+
+  bool _containsPathModified = false;
+
+  bool get containsPathModified => _containsPathModified;
+
+  set containsPathModified(bool containsPathModified) {
+    _containsPathModified = containsPathModified;
+    notifyListeners();
+  }
+
+  DateTime _startDt = DateTime(2005); // Default Before 8 years
 
   DateTime get startDt => _startDt;
 
@@ -48,7 +69,10 @@ class PhotoProvider extends ChangeNotifier {
 
   bool get asc => _asc;
 
-  set asc(bool asc) {
+  set asc(bool? asc) {
+    if (asc == null) {
+      return;
+    }
     _asc = asc;
     notifyListeners();
   }
@@ -68,11 +92,14 @@ class PhotoProvider extends ChangeNotifier {
   String maxWidth = "10000";
   String minHeight = "0";
   String maxHeight = "10000";
-  bool _ignoreSize = false;
+  bool _ignoreSize = true;
 
   bool get ignoreSize => _ignoreSize;
 
-  set ignoreSize(bool ignoreSize) {
+  set ignoreSize(bool? ignoreSize) {
+    if (ignoreSize == null) {
+      return;
+    }
     _ignoreSize = ignoreSize;
     notifyListeners();
   }
@@ -95,7 +122,10 @@ class PhotoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  set notifying(bool notifying) {
+  set notifying(bool? notifying) {
+    if (notifying == null) {
+      return;
+    }
     _notifying = notifying;
     notifyListeners();
   }
@@ -105,14 +135,35 @@ class PhotoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void changeHasAll(bool value) {
+  void changeHasAll(bool? value) {
+    if (value == null) {
+      return;
+    }
     this.hasAll = value;
     notifyListeners();
   }
 
-  void changeOnlyAll(bool value) {
+  void changeOnlyAll(bool? value) {
+    if (value == null) {
+      return;
+    }
     this.onlyAll = value;
     notifyListeners();
+  }
+
+  void changeContainsEmptyAlbum(bool? value) {
+    if (value == null) {
+      return;
+    }
+    this.containsEmptyAlbum = value;
+    notifyListeners();
+  }
+
+  void changeContainsPathModified(bool? value) {
+    if (value == null) {
+      return;
+    }
+    this.containsPathModified = value;
   }
 
   void reset() {
@@ -122,11 +173,6 @@ class PhotoProvider extends ChangeNotifier {
 
   Future<void> refreshGalleryList() async {
     final option = makeOption();
-
-    if (option == null) {
-      assert(option != null);
-      return;
-    }
 
     reset();
     var galleryList = await PhotoManager.getAssetPathList(
@@ -146,50 +192,44 @@ class PhotoProvider extends ChangeNotifier {
 
   AssetPathProvider getOrCreatePathProvider(AssetPathEntity pathEntity) {
     pathProviderMap[pathEntity] ??= AssetPathProvider(pathEntity);
-    return pathProviderMap[pathEntity];
+    return pathProviderMap[pathEntity]!;
   }
 
   FilterOptionGroup makeOption() {
-    SizeConstraint sizeConstraint;
-    try {
-      final minW = int.tryParse(minWidth);
-      final maxW = int.tryParse(maxWidth);
-      final minH = int.tryParse(minHeight);
-      final maxH = int.tryParse(maxHeight);
-      sizeConstraint = SizeConstraint(
-        minWidth: minW,
-        maxWidth: maxW,
-        minHeight: minH,
-        maxHeight: maxH,
-        ignoreSize: ignoreSize,
-      );
-    } catch (e) {
-      showToast("Cannot convert your size.");
-      return null;
-    }
-
-    DurationConstraint durationConstraint = DurationConstraint(
-      min: minDuration,
-      max: maxDuration,
-    );
-
     final option = FilterOption(
-      sizeConstraint: sizeConstraint,
-      durationConstraint: durationConstraint,
+      sizeConstraint: SizeConstraint(
+        minWidth: int.tryParse(minWidth) ?? 0,
+        maxWidth: int.tryParse(maxWidth) ?? 100000,
+        minHeight: int.tryParse(minHeight) ?? 0,
+        maxHeight: int.tryParse(maxHeight) ?? 100000,
+        ignoreSize: ignoreSize,
+      ),
+      durationConstraint: DurationConstraint(
+        min: minDuration,
+        max: maxDuration,
+      ),
       needTitle: needTitle,
     );
 
-    final dtCond = DateTimeCond(
+    final createDtCond = DateTimeCond(
       min: startDt,
       max: endDt,
-      asc: asc,
+      ignore: false,
     );
 
     return FilterOptionGroup()
       ..setOption(AssetType.video, option)
       ..setOption(AssetType.image, option)
       ..setOption(AssetType.audio, option)
-      ..dateTimeCond = dtCond;
+      ..createTimeCond = createDtCond
+      ..containsEmptyAlbum = _containsEmptyAlbum
+      ..containsPathModified = _containsPathModified
+      ..addOrderOption(
+        OrderOption(
+          type: OrderOptionType.updateDate,
+          asc: asc,
+        ),
+      );
   }
 
   Future<void> refreshAllGalleryProperties() async {
@@ -228,8 +268,17 @@ class AssetPathProvider extends ChangeNotifier {
     }
   }
 
+  bool refreshing = false;
+
   Future onRefresh() async {
-    await path.refreshPathProperties();
+    if (refreshing) {
+      return;
+    }
+
+    refreshing = true;
+    await path.refreshPathProperties(
+      maxDateTimeToNow: false,
+    );
     final list = await path.getAssetListPaged(0, loadCount);
     page = 0;
     this.list.clear();
@@ -237,9 +286,14 @@ class AssetPathProvider extends ChangeNotifier {
     isInit = true;
     notifyListeners();
     printListLength("onRefresh");
+
+    refreshing = false;
   }
 
   Future<void> onLoadMore() async {
+    if (refreshing) {
+      return;
+    }
     if (showItemCount > path.assetCount) {
       print("already max");
       return;
@@ -261,6 +315,14 @@ class AssetPathProvider extends ChangeNotifier {
       this.list.addAll(list);
       printListLength("deleted");
     }
+  }
+
+  void deleteSelectedAssets(List<AssetEntity> entity) async {
+    final ids = entity.map((e) => e.id).toList();
+    await PhotoManager.editor.deleteWithIds(ids);
+    await path.refreshPathProperties();
+    showToast('The path ${path.name} asset count have :${path.assetCount}');
+    notifyListeners();
   }
 
   void removeInAlbum(AssetEntity entity) async {

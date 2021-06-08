@@ -9,12 +9,15 @@ import 'package:photo_manager/photo_manager.dart';
 import 'package:provider/provider.dart';
 
 class ImageItemWidget extends StatefulWidget {
-  final AssetEntity entity;
-
   const ImageItemWidget({
-    Key key,
-    this.entity,
+    Key? key,
+    required this.entity,
+    required this.option,
   }) : super(key: key);
+
+  final AssetEntity entity;
+  final ThumbOption option;
+
   @override
   _ImageItemWidgetState createState() => _ImageItemWidgetState();
 }
@@ -42,7 +45,7 @@ class _ImageItemWidgetState extends State<ImageItemWidget> {
       );
     }
     final item = widget.entity;
-    final size = 130;
+    final size = widget.option.width;
     final u8List = ImageLruCache.getData(item, size, format);
 
     Widget image;
@@ -50,8 +53,8 @@ class _ImageItemWidgetState extends State<ImageItemWidget> {
     if (u8List != null) {
       return _buildImageWidget(item, u8List, size);
     } else {
-      image = FutureBuilder<Uint8List>(
-        future: item.thumbDataWithSize(size, size, format: format),
+      image = FutureBuilder<Uint8List?>(
+        future: item.thumbDataWithOption(widget.option),
         builder: (context, snapshot) {
           Widget w;
           if (snapshot.hasError) {
@@ -60,8 +63,8 @@ class _ImageItemWidgetState extends State<ImageItemWidget> {
             );
           }
           if (snapshot.hasData) {
-            ImageLruCache.setData(item, size, format, snapshot.data);
-            w = _buildImageWidget(item, snapshot.data, size);
+            ImageLruCache.setData(item, size, format, snapshot.data!);
+            w = _buildImageWidget(item, snapshot.data!, size);
           } else {
             w = Center(
               child: loadWidget,

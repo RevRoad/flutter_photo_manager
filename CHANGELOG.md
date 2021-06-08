@@ -1,6 +1,30 @@
 # CHANGELOG
 
 - [CHANGELOG](#changelog)
+  - [1.2.2](#122)
+  - [1.2.1](#121)
+  - [1.2.0](#120)
+  - [1.1.6](#116)
+  - [1.1.5](#115)
+  - [1.1.4](#114)
+  - [1.1.3](#113)
+  - [1.1.2](#112)
+  - [1.1.1](#111)
+  - [1.1.0](#110)
+  - [1.0.6](#106)
+  - [1.0.4](#104)
+  - [1.0.3](#103)
+  - [1.0.2](#102)
+  - [1.0.1](#101)
+  - [1.0.0](#100)
+  - [0.6.0](#060)
+  - [0.5.8](#058)
+  - [0.5.7](#057)
+  - [0.5.6](#056)
+  - [0.5.5+1](#0551)
+  - [0.5.5](#055)
+  - [0.5.4](#054)
+  - [0.5.3+1](#0531)
   - [0.5.3](#053)
   - [0.5.2](#052)
   - [0.5.1](#051)
@@ -37,6 +61,141 @@
   - [0.0.2 update readme](#002-update-readme)
   - [0.0.1](#001)
 
+## 1.2.2
+
+Fix:
+- Add request permissions result listener when activity re-attached. [#515](../../pull/515)
+
+## 1.2.1
+
+Fix:
+- An error of iOS. See [#509](../../pull/509), [#510](../../pull/510).
+
+## 1.2.0
+
+Feature:
+- Add requestPermissionExtend code to support iOS 14 permission.
+- Add update limited photos method for iOS 14.
+
+Fix:
+- Permissions dialog of launch on old iOS versions. [#503](../../pull/503)
+
+## 1.1.6
+
+The MEDIA_LOCATION permission of android can be removed through configuration.
+
+## 1.1.5
+
+Revert [#478](../../pull/478)
+
+Fix:
+- Thumb size of the entity on iOS/macOS.
+
+## 1.1.4
+
+Merged [#478](../../pull/478)
+
+## 1.1.3
+
+Merged the code of macos and ios.
+
+## 1.1.2
+
+- Updated the code in the macOS part.
+
+## 1.1.1
+
+- Fix: `thumbWithSize` of `AssetEntity`.
+
+## 1.1.0
+
+- Feature: `modified` of `AssetPathEntity`.
+- Feature: Update constructor of `FilterOptionGroup`.
+
+- Fix: Order option of the `FilterOptionGroup`.
+
+## 1.0.6
+
+- Add relative path when saving files to the MediaStore on Android 29+ (#462)
+- Fix deleteWithIds typecast issue with Android 29- (#460)
+
+## 1.0.4
+
+- Add mime type for android.
+
+## 1.0.3
+
+- Fix serious code usage issue in convert utils.
+
+## 1.0.2
+
+- Improve the constructor for `AssetEntity`.
+
+## 1.0.1
+
+- Fix
+  - orientation bug.
+
+## 1.0.0
+
+Breaking change:
+- Migrate to null safety.
+- Correct type in `PMRequestState` .
+
+## 0.6.0
+
+- Feature
+  - Support android API 30.
+  - Support show empty album in iOS([#365](../../issues/365)).
+  - User can ignore check permission(User can choose favorite permission plugin, but at the same time user have to bear the risks corresponding to the permission).
+  - Support clean file cache.
+  - Experimental
+    - Preload image (Use `PhotoCachingManager` api.)
+  - Add `OrderOption` as sort condition. The option default value is order by create date desc;
+  - Support icloud asset progress.
+
+- Fixes
+  - [#362](../../issues/362)
+  - Delete assets in androidQ.
+  - Edited image data in iOS.
+  - Fix delete error in androidR.
+
+Breaking change:
+
+- Feature
+  - Support multiple sorting conditions, and the `asc` of `DateTimeCond` is removed.
+
+## 0.5.8
+
+Fix:
+
+Delete assets in androidQ.
+
+## 0.5.7
+
+Fix:
+- Audio asset error for androidQ. See [#340](../../issues/340) [#341](../../pull/341).
+
+## 0.5.6
+
+Fix save image with path for android.
+
+## 0.5.5+1
+
+Remove verbose log.
+
+## 0.5.5
+
+Add `merge` for `FilterOptionGroup` and `FilterOption` .
+
+## 0.5.4
+
+Add `copyWith` for `FilterOption` .
+
+## 0.5.3+1
+
+Support android v2 model.
+
 ## 0.5.3
 
 Fix:
@@ -52,7 +211,6 @@ From the version, Starting from this version, 1.9 or earlier versions are not su
 ## 0.5.1
 
 Feature:
-
 - Save image asset with file path.
 - Copy asset to another album.
 - Create AssetEntity with id.
@@ -68,7 +226,6 @@ Feature:
   - add `relativePath` for android.
 
 Fix:
-
 - Problem of AssetPathEntity.refreshPathProperties.
 - Open setting in iOS.
 - Edited asset in iOS.
@@ -84,7 +241,6 @@ Change:
 ## 0.5.0
 
 Feature:
-
 - Add `getSubPathEntities` for `AssetPathEntity`.
 - Add `quality` for `AssetEntity.thumbDataWithSize`.
 - Add `orientation` for `AssetEntity`.
@@ -113,8 +269,8 @@ Fix
 
 Fixes:
 
-- [#169](https://github.com/CaiJingLong/flutter_photo_manager/issues/169)
-- [#170](https://github.com/CaiJingLong/flutter_photo_manager/issues/170)
+- [#169](../../issues/169)
+- [#170](../../issues/170)
 
 ## 0.4.7
 
