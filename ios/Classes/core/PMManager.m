@@ -347,7 +347,7 @@
   [cacheContainer clearCache];
 }
 
-- (void)returnError:(NSError *)error resultHandler:(ResultHandler *)handler {
+- (void)returnError:(NSError *)error resultHandler:(NSObject <PMResultHandler> *)handler {
     FlutterError *flutterError = [FlutterError errorWithCode:[@(error.code) stringValue]
                                                      message:error.domain
                                                      details:error.localizedDescription];
@@ -367,17 +367,17 @@
 - (void)fetchThumb:(PHAsset *)asset option:(PMThumbLoadOption *)option resultHandler:(NSObject <PMResultHandler> *)handler progressHandler:(NSObject <PMProgressHandlerProtocol> *)progressHandler {
   PHImageManager *manager = PHImageManager.defaultManager;
   PHImageRequestOptions *requestOptions = [PHImageRequestOptions new];
-  bool exactSize = option.exactSize == "true";
-  bool download = option.download == "true";
+  bool exactSize = option.exactSize;
+  bool download = option.download;
   if (exactSize) {
-    options.deliveryMode = PHImageRequestOptionsDeliveryModeHighQualityFormat;
-    options.resizeMode = PHImageRequestOptionsResizeModeExact;
+    requestOptions.deliveryMode = PHImageRequestOptionsDeliveryModeHighQualityFormat;
+    requestOptions.resizeMode = PHImageRequestOptionsResizeModeExact;
   }
   else {
     requestOptions.deliveryMode = option.deliveryMode;
     requestOptions.resizeMode = option.resizeMode;
   }
-  options.version = PHImageRequestOptionsVersionCurrent;
+  requestOptions.version = PHImageRequestOptionsVersionCurrent;
 
   [self notifyProgress:progressHandler progress:0 state:PMProgressStatePrepare];
 
@@ -400,7 +400,7 @@
   int width = option.width;
   int height = option.height;
 
-  void (^returnImageData)(UIImage *) = ^(UIImage *image) {
+  void (^returnImageData)(PMImage *) = ^(PMImage *image) {
     if (exactSize && (image.size.width != width || image.size.height != height)) {
       NSUInteger minSide = MIN(image.size.width, image.size.height);
       NSUInteger cropWidth = MIN(minSide, width);
@@ -411,7 +411,7 @@
       // NSLog(@"Wanting exact size and Apple didn't give us the right size. image.size: %@. desired width: %ld height: %ld. cropWidth: %ld, cropHeight: %ld. Attempting to crop with rect: %@. image before: %@", NSStringFromCGSize(image.size), width, height, cropWidth, cropHeight, NSStringFromCGRect(cropRect), image);
       image = [image crop:cropRect];
     }
-    NSData *imageData = [PMImageUtil convertToData:result formatType:option.format quality:option.quality];
+    NSData *imageData = [PMImageUtil convertToData:image formatType:option.format quality:option.quality];
     if (imageData) {
       id data = [self.converter convertData:imageData];
       [handler reply:data];

@@ -82,31 +82,6 @@ class RequestType {
   }
 }
 
-class AssetResponse {
-  Uint8List assetBytes;
-  Exception error;
-  bool isInCloud = false;
-  bool isDegraded = false;
-  double progress;
-  int requestId;
-
-  AssetResponse({this.assetBytes, this.error, this.isInCloud, this.isDegraded, this.progress, this.requestId});
-
-  void updateFromJson(Map<dynamic, dynamic> json) {
-    json ??= {};
-    assetBytes = json['assetBytes'] ?? assetBytes;
-    error = json['error'] ?? error;
-    isInCloud = json['isInCloud'] ?? isInCloud;
-    isDegraded = json['isDegraded'] ?? isDegraded;
-    progress = json['progress'] ?? progress;
-    requestId = json['requestId'] ?? requestId;
-  }
-
-  String toString() {
-    return 'bytes: ${assetBytes?.length}. degraded: $isDegraded. cloud: $isInCloud. progress: $progress. requestId: $requestId';
-  }
-}
-
 /// For generality, only support jpg and png.
 enum ThumbFormat { jpeg, png }
 

@@ -16,8 +16,10 @@ typedef enum PMThumbFormatType {
 @property(nonatomic, assign) int height;
 @property(nonatomic, assign) PMThumbFormatType format;
 @property(nonatomic, assign) float quality;
+@property(nonatomic, assign) bool exactSize;
 
 #pragma mark only iOS
+@property(nonatomic, assign) bool download;
 @property(nonatomic, assign) PHImageContentMode contentMode;
 @property(nonatomic, assign) PHImageRequestOptionsDeliveryMode deliveryMode;
 @property(nonatomic, assign) PHImageRequestOptionsResizeMode resizeMode;
