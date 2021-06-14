@@ -154,6 +154,12 @@
                           hasAll:(BOOL)hasAll
               containsEmptyAlbum:(BOOL)containsEmptyAlbum {
   for (id collection in result) {
+    if ([collection isMemberOfClass:[PHCollectionList class]]) {
+        // Moments, Years, or folders
+        [array addObject:[self convertPHCollectionToPMPath:collection option:options]];
+        continue;
+    }
+
     if (![collection isMemberOfClass:[PHAssetCollection class]]) {
       continue;
     }
