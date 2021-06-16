@@ -9,7 +9,10 @@ import '../type.dart';
 /// See [FilterOption]
 class FilterOptionGroup {
   static final _defaultOrderOption = OrderOption(
-    type: OrderOptionType.updateDate,
+    // need to test this on android
+    type: OrderOptionType.createDate,
+    // commit 8442b2517661b58734ed9ee036adc570d021cbef Fix filter option for android.
+    // type: OrderOptionType.updateDate,
     asc: false,
   );
 
