@@ -60,7 +60,7 @@ object ThumbnailUtil {
   }
 
 
-  fun getThumbOfUri(context: Context, uri: Uri, width: Int, height: Int, format: Int, quality: Int, exactSize: Boolean, callback: (ByteArray?) -> Unit) {
+  fun getThumbOfUri(context: Context, uri: Uri, width: Int, height: Int, format: Bitmap.CompressFormat, quality: Int, exactSize: Boolean, callback: (ByteArray?) -> Unit) {
     Glide.with(context)
         .asBitmap()
         .apply(getGlideRequestOptions(exactSize))
