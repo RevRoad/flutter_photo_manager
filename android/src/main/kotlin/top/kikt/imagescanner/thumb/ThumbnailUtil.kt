@@ -23,86 +23,107 @@ import android.R.attr.top
  * Created by debuggerx on 18-9-27 下午2:08
  */
 object ThumbnailUtil {
-
-  fun getGlideRequestOptions(exactSize: Boolean): RequestOptions {
-    var options = RequestOptions()
-    if (exactSize) {
-      options = options.centerCrop();
+    fun getGlideRequestOptions(exactSize: Boolean): RequestOptions {
+      var options = RequestOptions()
+      if (exactSize) {
+        options = options.centerCrop();
+      }
+      return options;
     }
-    return options;
-  }
 
-  fun getThumbnailByGlide(ctx: Context, path: String, width: Int, height: Int, format: Bitmap.CompressFormat, quality: Int, exactSize: Boolean, result: MethodChannel.Result?) {
-    val resultHandler = ResultHandler(result)
+    fun getThumbnailByGlide(
+        ctx: Context,
+        path: String,
+        width: Int,
+        height: Int,
+        format: Bitmap.CompressFormat,
+        quality: Int,
+        exactSize: Boolean,
+        result: MethodChannel.Result?
+    ) {
+        val resultHandler = ResultHandler(result)
 
-    Glide.with(ctx)
-        .asBitmap()
-        .apply(getGlideRequestOptions(exactSize))
-        .load(File(path))
-        .priority(Priority.IMMEDIATE)
-        .into(object : BitmapTarget(width, height) {
-          override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-            super.onResourceReady(resource, transition)
-            val bos = ByteArrayOutputStream()
+        Glide.with(ctx)
+            .asBitmap()
+            .apply(getGlideRequestOptions(exactSize))
+            .load(File(path))
+            .priority(Priority.IMMEDIATE)
+            .into(object : BitmapTarget(width, height) {
+                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                    super.onResourceReady(resource, transition)
+                    val bos = ByteArrayOutputStream()
 
-            resource.compress(format, quality, bos)
-            resultHandler.reply(bos.toByteArray())
-          }
+                    resource.compress(format, quality, bos)
+                    resultHandler.reply(bos.toByteArray())
+                }
 
-          override fun onLoadCleared(placeholder: Drawable?) {
-            resultHandler.reply(null)
-          }
+                override fun onLoadCleared(placeholder: Drawable?) {
+                    resultHandler.reply(null)
+                }
 
-          override fun onLoadFailed(errorDrawable: Drawable?) {
-            resultHandler.reply(null)
-          }
-        })
-  }
-
-
-  fun getThumbOfUri(context: Context, uri: Uri, width: Int, height: Int, format: Bitmap.CompressFormat, quality: Int, exactSize: Boolean, callback: (ByteArray?) -> Unit) {
-    Glide.with(context)
-        .asBitmap()
-        .apply(getGlideRequestOptions(exactSize))
-        .load(uri)
-        .priority(Priority.IMMEDIATE)
-        .into(object : BitmapTarget(width, height) {
-          override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-            super.onResourceReady(resource, transition)
-            val bos = ByteArrayOutputStream()
-
-            resource.compress(format, quality, bos)
-            callback(bos.toByteArray())
-          }
-
-          override fun onLoadCleared(placeholder: Drawable?) {
-            callback(null)
-          }
-        })
-  }
-
-  fun requestCacheThumb(context: Context, uri: Uri, thumbLoadOption: ThumbLoadOption): FutureTarget<Bitmap> {
-    return Glide.with(context)
-        .asBitmap()
-        .priority(Priority.LOW)
-        .load(uri)
-        .submit(thumbLoadOption.width, thumbLoadOption.height)
-  }
-
-
-  fun requestCacheThumb(context: Context, path: String, thumbLoadOption: ThumbLoadOption): FutureTarget<Bitmap> {
-    return Glide.with(context)
-        .asBitmap()
-        .priority(Priority.LOW)
-        .load(path)
-        .submit(thumbLoadOption.width, thumbLoadOption.height)
-  }
-
-  fun clearCache(context: Context) {
-    Glide.get(context).apply {
-      clearDiskCache()
+                override fun onLoadFailed(errorDrawable: Drawable?) {
+                    resultHandler.reply(null)
+                }
+            })
     }
-  }
 
+    fun getThumbOfUri(
+        context: Context,
+        uri: Uri,
+        width: Int,
+        height: Int,
+        format: Bitmap.CompressFormat,
+        quality: Int,
+        exactSize: Boolean,
+        callback: (ByteArray?) -> Unit
+    ) {
+        Glide.with(context)
+            .asBitmap()
+            .apply(getGlideRequestOptions(exactSize))
+            .load(uri)
+            .priority(Priority.IMMEDIATE)
+            .into(object : BitmapTarget(width, height) {
+                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                    super.onResourceReady(resource, transition)
+                    val bos = ByteArrayOutputStream()
 
+                    resource.compress(format, quality, bos)
+                    callback(bos.toByteArray())
+                }
+
+                override fun onLoadCleared(placeholder: Drawable?) {
+                    callback(null)
+                }
+            })
+    }
+
+    fun requestCacheThumb(
+        context: Context,
+        uri: Uri,
+        thumbLoadOption: ThumbLoadOption
+    ): FutureTarget<Bitmap> {
+        return Glide.with(context)
+            .asBitmap()
+            .priority(Priority.LOW)
+            .load(uri)
+            .submit(thumbLoadOption.width, thumbLoadOption.height)
+    }
+
+    fun requestCacheThumb(
+        context: Context,
+        path: String,
+        thumbLoadOption: ThumbLoadOption
+    ): FutureTarget<Bitmap> {
+        return Glide.with(context)
+            .asBitmap()
+            .priority(Priority.LOW)
+            .load(path)
+            .submit(thumbLoadOption.width, thumbLoadOption.height)
+    }
+
+    fun clearCache(context: Context) {
+        Glide.get(context).apply {
+            clearDiskCache()
+        }
+    }
 }

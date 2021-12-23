@@ -24,6 +24,7 @@
     option.exactSize = dict[@"exactSize"];
     option.download = dict[@"download"];
 
+
     int dm = [dict[@"deliveryMode"] intValue];
     int rm = [dict[@"resizeMode"] intValue];
     int rcm = [dict[@"resizeContentMode"] intValue];
@@ -32,13 +33,13 @@
     switch (dm) {
         case 0:
             deliveryMode = PHImageRequestOptionsDeliveryModeOpportunistic;
-        break;
+            break;
         case 1:
             deliveryMode = PHImageRequestOptionsDeliveryModeHighQualityFormat;
-        break;
+            break;
         case 2:
             deliveryMode = PHImageRequestOptionsDeliveryModeFastFormat;
-        break;
+            break;
         default:
             deliveryMode = PHImageRequestOptionsDeliveryModeOpportunistic;
 
@@ -50,13 +51,13 @@
     switch (rm) {
         case 0:
             resizeMode = PHImageRequestOptionsResizeModeNone;
-        break;
+            break;
         case 1:
             resizeMode = PHImageRequestOptionsResizeModeFast;
-        break;
+            break;
         case 2:
             resizeMode = PHImageRequestOptionsResizeModeExact;
-        break;
+            break;
         default:
             resizeMode = PHImageRequestOptionsResizeModeNone;
 
@@ -67,13 +68,13 @@
     switch (rcm) {
         case 0:
             resizeContentMode = PHImageContentModeAspectFit;
-        break;
+            break;
         case 1:
             resizeContentMode = PHImageContentModeAspectFill;
-        break;
+            break;
         case 2:
             resizeContentMode = PHImageContentModeDefault;
-        break;
+            break;
         default:
             resizeContentMode = PHImageContentModeAspectFit;
 
@@ -84,7 +85,7 @@
 }
 
 - (CGSize)makeSize {
-  return CGSizeMake(self.width, self.height);
+    return CGSizeMake(self.width, self.height);
 }
 
 

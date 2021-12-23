@@ -2,7 +2,13 @@ package top.kikt.imagescanner.core.entity
 
 import android.graphics.Bitmap
 
-data class ThumbLoadOption(val width: Int, val height: Int, val format: Bitmap.CompressFormat, val quality: Int, val exactSize: Boolean) {
+data class ThumbLoadOption(
+    val width: Int,
+    val height: Int,
+    val format: Bitmap.CompressFormat,
+    val quality: Int,
+    val exactSize: Boolean
+) {
 
   companion object Factory {
     fun fromMap(map: Map<*, *>): ThumbLoadOption {
@@ -12,16 +18,14 @@ data class ThumbLoadOption(val width: Int, val height: Int, val format: Bitmap.C
       val quality = map["quality"] as Int
       val exactSize = map["exactSize"] as Boolean
 
-      val compressFormat =
-          if (format == 0) {
-            Bitmap.CompressFormat.JPEG
-          } else {
-            Bitmap.CompressFormat.PNG
-          }
+            val compressFormat =
+                if (format == 0) {
+                    Bitmap.CompressFormat.JPEG
+                } else {
+                    Bitmap.CompressFormat.PNG
+                }
 
-      return ThumbLoadOption(width, height, compressFormat, quality, exactSize)
+            return ThumbLoadOption(width, height, compressFormat, quality, exactSize)
+        }
     }
-  }
-
-
 }
