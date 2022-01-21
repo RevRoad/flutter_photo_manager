@@ -21,8 +21,8 @@
     } else {
         option.format = PMThumbFormatTypePNG;
     }
-    option.exactSize = dict[@"exactSize"];
-    option.download = dict[@"download"];
+    option.exactSize = [dict[@"exactSize"] boolValue];
+    option.download = [dict[@"download"] boolValue];
 
 
     int dm = [dict[@"deliveryMode"] intValue];
