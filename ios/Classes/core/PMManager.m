@@ -30,7 +30,7 @@
 @implementation PMManager {
     BOOL __isAuth;
     PMCacheContainer *cacheContainer;
-
+    
     PHCachingImageManager *__cachingManager;
 }
 
@@ -40,7 +40,7 @@
         __isAuth = NO;
         cacheContainer = [PMCacheContainer new];
     }
-
+    
     return self;
 }
 
@@ -56,7 +56,7 @@
     if (__cachingManager == nil) {
         __cachingManager = [PHCachingImageManager new];
     }
-
+    
     return __cachingManager;
 }
 
@@ -90,7 +90,7 @@
                            options:assetOptions
                             hasAll:hasAll
                   containsModified:option.containsModified];
-   
+    
     PHFetchResult<PHAssetCollection *> *albumResult = [PHAssetCollection
                                                        fetchAssetCollectionsWithType:PHAssetCollectionTypeAlbum
                                                        subtype:PHAssetCollectionSubtypeAny
@@ -223,9 +223,9 @@
 
 - (NSArray<PMAssetEntity *> *)getAssetListPaged:(NSString *)id type:(int)type page:(NSUInteger)page size:(NSUInteger)size filterOption:(PMFilterOptionGroup *)filterOption {
     NSMutableArray<PMAssetEntity *> *result = [NSMutableArray new];
-
+    
     PHFetchOptions *options = [PHFetchOptions new];
-
+    
     PHFetchResult<PHAssetCollection *> *fetchResult =
     [PHAssetCollection fetchAssetCollectionsWithLocalIdentifiers:@[id]
                                                          options:options];
@@ -249,10 +249,10 @@
     if (endIndex >= count) {
         endIndex = count - 1;
     }
-
+    
     BOOL imageNeedTitle = filterOption.imageOption.needTitle;
     BOOL videoNeedTitle = filterOption.videoOption.needTitle;
-
+    
     for (NSUInteger i = startIndex; i <= endIndex; i++) {
         NSUInteger index = i;
         if (assetOptions.sortDescriptors == nil) {
@@ -269,15 +269,15 @@
         [result addObject:entity];
         [cacheContainer putAssetEntity:entity];
     }
-
+    
     return result;
 }
 
 - (NSArray<PMAssetEntity *> *)getAssetListRange:(NSString *)id type:(int)type start:(NSUInteger)start end:(NSUInteger)end filterOption:(PMFilterOptionGroup *)filterOption {
     NSMutableArray<PMAssetEntity *> *result = [NSMutableArray new];
-
+    
     PHFetchOptions *options = [PHFetchOptions new];
-
+    
     PHFetchResult<PHAssetCollection *> *fetchResult =
     [PHAssetCollection fetchAssetCollectionsWithLocalIdentifiers:@[id]
                                                          options:options];
@@ -293,15 +293,15 @@
     if (assetArray.count == 0) {
         return result;
     }
-
+    
     NSUInteger startIndex = start;
     NSUInteger endIndex = end - 1;
-
+    
     NSUInteger count = assetArray.count;
     if (endIndex >= count) {
         endIndex = count - 1;
     }
-
+    
     for (NSUInteger i = startIndex; i <= endIndex; i++) {
         NSUInteger index = i;
         if (assetOptions.sortDescriptors == nil) {
@@ -316,12 +316,12 @@
         } else {
             needTitle = NO;
         }
-
+        
         PMAssetEntity *entity = [self convertPHAssetToAssetEntity:asset needTitle:needTitle];
         [result addObject:entity];
         [cacheContainer putAssetEntity:entity];
     }
-
+    
     return result;
 }
 
@@ -329,20 +329,20 @@
                                      needTitle:(BOOL)needTitle {
     // type:
     // 0: all , 1: image, 2:video
-
+    
     int type = 0;
     if (asset.isImage) {
         type = 1;
     } else if (asset.isVideo) {
         type = 2;
     }
-
+    
     NSDate *date = asset.creationDate;
     long createDt = (long) date.timeIntervalSince1970;
-
+    
     NSDate *modifiedDate = asset.modificationDate;
     long modifiedTimeStamp = (long) modifiedDate.timeIntervalSince1970;
-
+    
     PMAssetEntity *entity = [PMAssetEntity entityWithId:asset.localIdentifier
                                                createDt:createDt
                                                   width:asset.pixelWidth
@@ -377,7 +377,7 @@
     if (result == nil || result.count == 0) {
         return nil;
     }
-
+    
     PHAsset *asset = result[0];
     entity = [self convertPHAssetToAssetEntity:asset needTitle:NO];
     [cacheContainer putAssetEntity:entity];
@@ -421,7 +421,7 @@
     requestOptions.version = PHImageRequestOptionsVersionCurrent;
 
     [self notifyProgress:progressHandler progress:0 state:PMProgressStatePrepare];
-
+    
     [requestOptions setNetworkAccessAllowed:download];
     [requestOptions setProgressHandler:^(double progress, NSError *error, BOOL *stop,
         NSDictionary *info) {
@@ -547,7 +547,7 @@
     
     PHAssetResourceRequestOptions *options = [PHAssetResourceRequestOptions new];
     [options setNetworkAccessAllowed:YES];
-
+    
     [self notifyProgress:progressHandler progress:0 state:PMProgressStatePrepare];
     [options setProgressHandler:^(double progress) {
         if (progress != 1) {
@@ -845,7 +845,7 @@
             [self notifyProgress:progressHandler progress:progress state:PMProgressStateLoading];
         }
     }];
-
+    
     [manager requestImageForAsset:asset
                        targetSize:PHImageManagerMaximumSize
                       contentMode:PHImageContentModeDefault
@@ -1255,7 +1255,7 @@
 
 - (PMAssetPathEntity *)convertPHCollectionToPMPath:(PHCollection *)phCollection option:(PHFetchOptions *)option {
     PMAssetPathEntity *pathEntity = [PMAssetPathEntity new];
-
+    
     pathEntity.id = phCollection.localIdentifier;
     pathEntity.isAll = NO;
     pathEntity.name = phCollection.localizedTitle;
@@ -1350,7 +1350,7 @@
             
             
             block(targetId, error.localizedDescription);
-
+            
         } else {
             block(nil, [NSString stringWithFormat:@"Cannot find folder : %@", id]);
             return;
