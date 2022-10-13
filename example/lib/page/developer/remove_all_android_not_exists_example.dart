@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 class RemoveAndroidNotExistsExample extends StatefulWidget {
+  const RemoveAndroidNotExistsExample({Key? key}) : super(key: key);
+
   @override
-  _RemoveAndroidNotExistsExampleState createState() =>
+  State<RemoveAndroidNotExistsExample> createState() =>
       _RemoveAndroidNotExistsExampleState();
 }
 
@@ -13,12 +15,12 @@ class _RemoveAndroidNotExistsExampleState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Remove android not exists assets."),
+        title: const Text('Remove android not exists assets.'),
       ),
       body: Column(
         children: <Widget>[
           ElevatedButton(
-            child: Text("Click and see android logcat log."),
+            child: const Text('Click and see android logcat log.'),
             onPressed: () {
               PhotoManager.editor.android.removeAllNoExistsAsset();
             },

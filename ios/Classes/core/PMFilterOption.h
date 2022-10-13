@@ -1,7 +1,3 @@
-//
-// Created by Caijinglong on 2020/1/17.
-//
-
 #import <Foundation/Foundation.h>
 
 @interface PMDateOption : NSObject
@@ -30,6 +26,7 @@ typedef struct PMDurationConstraint {
 
     double minDuration;
     double maxDuration;
+    BOOL allowNullable;
 
 } PMDurationConstraint;
 
@@ -56,7 +53,8 @@ typedef struct PMDurationConstraint {
 @property(nonatomic, strong) PMFilterOption *audioOption;
 @property(nonatomic, strong) PMDateOption *dateOption;
 @property(nonatomic, strong) PMDateOption *updateOption;
-@property(nonatomic, assign) BOOL containsEmptyAlbum;
+@property(nonatomic, assign) BOOL containsLivePhotos;
+@property(nonatomic, assign) BOOL onlyLivePhotos;
 @property(nonatomic, assign) BOOL containsModified;
 @property(nonatomic, strong) NSArray<NSSortDescriptor*> *sortArray;
 

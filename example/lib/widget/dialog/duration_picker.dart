@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../../util/log.dart';
+
 class DurationPicker extends StatefulWidget {
   const DurationPicker({
     Key? key,
@@ -10,7 +12,7 @@ class DurationPicker extends StatefulWidget {
   final Duration initDuration;
 
   @override
-  _DurationPickerState createState() => _DurationPickerState();
+  State<DurationPicker> createState() => _DurationPickerState();
 }
 
 class _DurationPickerState extends State<DurationPicker> {
@@ -25,9 +27,9 @@ class _DurationPickerState extends State<DurationPicker> {
   void initState() {
     super.initState();
 
-    print(hours);
-    print(minutes);
-    print(seconds);
+    Log.d(hours);
+    Log.d(minutes);
+    Log.d(seconds);
   }
 
   @override
@@ -50,21 +52,21 @@ class _DurationPickerState extends State<DurationPicker> {
                           hours: hours, minutes: minutes, seconds: seconds),
                     );
                   },
-                  child: Text(
-                    "Sure",
+                  child: const Text(
+                    'Sure',
                     style: TextStyle(color: Colors.white, fontSize: 14),
                   ),
                 ),
               ),
             ),
             Material(
-              child: Container(
+              child: SizedBox(
                 height: 88,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     _buildPicker(
-                      title: "h",
+                      title: 'h',
                       currentValue: hours,
                       max: 23,
                       valueChanged: (int value) {
@@ -73,7 +75,7 @@ class _DurationPickerState extends State<DurationPicker> {
                       },
                     ),
                     _buildPicker(
-                        title: "min",
+                        title: 'min',
                         currentValue: minutes,
                         max: 59,
                         valueChanged: (int value) {
@@ -81,10 +83,10 @@ class _DurationPickerState extends State<DurationPicker> {
                           changeDuration();
                         }),
                     _buildPicker(
-                        title: "sec",
+                        title: 'sec',
                         currentValue: seconds,
                         max: 59,
-                        valueChanged: (value) {
+                        valueChanged: (int value) {
                           seconds = value;
                           changeDuration();
                         }),
@@ -116,10 +118,10 @@ class _DurationPickerState extends State<DurationPicker> {
               FixedExtentScrollController(initialItem: currentValue),
           itemExtent: 88,
           childCount: max + 1,
-          onSelectedItemChanged: (value) {
+          onSelectedItemChanged: (int value) {
             valueChanged?.call(value);
           },
-          itemBuilder: (context, index) {
+          itemBuilder: (BuildContext context, int index) {
             return Center(
               child: Text(index.toString()),
             );
@@ -144,7 +146,7 @@ Future<Duration?> showCupertinoDurationPicker({
 }) {
   return showDialog(
     context: context,
-    builder: (ctx) {
+    builder: (BuildContext ctx) {
       return DurationPicker(
         initDuration: initDuration,
       );
