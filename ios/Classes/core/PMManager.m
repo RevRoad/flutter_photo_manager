@@ -847,11 +847,11 @@
     }];
 
     [manager requestImageForAsset:asset
-                      targetSize:PHImageManagerMaximumSize
-                     contentMode:PHImageContentModeDefault
-                         options:options
-                   resultHandler:^(PMImage *_Nullable image,
-                                   NSDictionary *_Nullable info) {
+                       targetSize:PHImageManagerMaximumSize
+                      contentMode:PHImageContentModeDefault
+                          options:options
+                    resultHandler:^(PMImage *_Nullable image,
+                                    NSDictionary *_Nullable info) {
 
         NSError *error = info[PHImageErrorKey];
         if (error) {
@@ -867,9 +867,9 @@
         if ([handler isReplied]) {
             return;
         }
-
+        
         NSData *data = [PMImageUtil convertToData:image formatType:PMThumbFormatTypeJPEG quality:0.95];
-
+        
         if (data) {
             NSString *path = [self writeFullFileWithAssetId:asset imageData: data];
             [handler reply:path];
