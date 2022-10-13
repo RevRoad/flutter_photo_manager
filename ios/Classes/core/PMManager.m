@@ -847,11 +847,11 @@
     }];
 
     [manager requestImageForAsset:asset
-                     targetSize:PHImageManagerMaximumSize
-                    contentMode:PHImageContentModeDefault
-                        options:options
-                  resultHandler:^(PMImage *_Nullable image,
-                                  NSDictionary *_Nullable info) {
+                      targetSize:PHImageManagerMaximumSize
+                     contentMode:PHImageContentModeDefault
+                         options:options
+                   resultHandler:^(PMImage *_Nullable image,
+                                   NSDictionary *_Nullable info) {
 
         NSError *error = info[PHImageErrorKey];
         if (error) {
@@ -863,7 +863,7 @@
         if (!downloadFinished) {
             return;
         }
-
+        
         if ([handler isReplied]) {
             return;
         }
