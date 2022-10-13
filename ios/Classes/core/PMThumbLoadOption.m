@@ -1,12 +1,12 @@
 #import "PMThumbLoadOption.h"
 
 @implementation PMThumbLoadOption {
-
+    
 }
 
 + (instancetype)optionDict:(NSDictionary *)dict {
     PMThumbLoadOption *option = [PMThumbLoadOption new];
-
+    
     option.width = [dict[@"width"] intValue];
     option.height = [dict[@"height"] intValue];
     int quality = [dict[@"quality"] intValue];
@@ -24,7 +24,7 @@
     int dm = [dict[@"deliveryMode"] intValue];
     int rm = [dict[@"resizeMode"] intValue];
     int rcm = [dict[@"resizeContentMode"] intValue];
-
+    
     PHImageRequestOptionsDeliveryMode deliveryMode;
     switch (dm) {
         case 0:
@@ -38,11 +38,11 @@
             break;
         default:
             deliveryMode = PHImageRequestOptionsDeliveryModeOpportunistic;
-
+            
     }
     option.deliveryMode = deliveryMode;
-
-
+    
+    
     PHImageRequestOptionsResizeMode resizeMode;
     switch (rm) {
         case 0:
@@ -56,10 +56,10 @@
             break;
         default:
             resizeMode = PHImageRequestOptionsResizeModeNone;
-
+            
     }
     option.resizeMode = resizeMode;
-
+    
     PHImageContentMode resizeContentMode;
     switch (rcm) {
         case 0:
@@ -73,10 +73,10 @@
             break;
         default:
             resizeContentMode = PHImageContentModeAspectFit;
-
+            
     }
     option.contentMode = resizeContentMode;
-
+    
     return option;
 }
 

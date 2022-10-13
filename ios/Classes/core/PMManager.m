@@ -424,7 +424,7 @@
     
     [requestOptions setNetworkAccessAllowed:download];
     [requestOptions setProgressHandler:^(double progress, NSError *error, BOOL *stop,
-        NSDictionary *info) {
+                                         NSDictionary *info) {
 
         if (error) {
             [self notifyProgress:progressHandler progress:progress state:PMProgressStateFailed];
