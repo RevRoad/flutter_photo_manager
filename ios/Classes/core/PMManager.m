@@ -876,7 +876,7 @@
         } else {
             [handler reply:nil];
         }
-
+        
         [self notifySuccess:progressHandler];
     }];
 }
@@ -892,7 +892,7 @@
     PHFetchResult<PHAssetCollection *> *result = [PHAssetCollection
                                                   fetchAssetCollectionsWithLocalIdentifiers:@[id]
                                                   options:collectionFetchOptions];
-
+    
     if (result == nil || result.count == 0) {
         return nil;
     }
@@ -913,25 +913,25 @@
 - (PHFetchOptions *)getAssetOptions:(int)type filterOption:(PMFilterOptionGroup *)optionGroup {
     PHFetchOptions *options = [PHFetchOptions new];
     options.sortDescriptors = [optionGroup sortCond];
-
+    
     NSMutableString *cond = [NSMutableString new];
     NSMutableArray *args = [NSMutableArray new];
-
+    
     BOOL containsImage = [PMRequestTypeUtils containsImage:type];
     BOOL containsVideo = [PMRequestTypeUtils containsVideo:type];
     BOOL containsAudio = [PMRequestTypeUtils containsAudio:type];
-
+    
     if (containsImage) {
         [cond appendString:@" ( "];
         
         PMFilterOption *imageOption = optionGroup.imageOption;
-
+        
         NSString *sizeCond = [imageOption sizeCond];
         NSArray *sizeArgs = [imageOption sizeArgs];
-
+        
         [cond appendString:@"mediaType == %d"];
         [args addObject:@(PHAssetMediaTypeImage)];
-
+        
         if (!imageOption.sizeConstraint.ignoreSize) {
             [cond appendString:@" AND "];
             [cond appendString:sizeCond];
@@ -955,19 +955,19 @@
         
         [cond appendString:@" )"];
     }
-
+    
     if (containsVideo) {
         if (![cond isEmpty]) {
             [cond appendString:@" OR"];
         }
-
+        
         [cond appendString:@" ( "];
-
+        
         PMFilterOption *videoOption = optionGroup.videoOption;
-
+        
         [cond appendString:@"mediaType == %d"];
         [args addObject:@(PHAssetMediaTypeVideo)];
-
+        
         NSString *durationCond = [videoOption durationCond];
         NSArray *durationArgs = [videoOption durationArgs];
         [cond appendString:@" AND "];
@@ -991,12 +991,12 @@
         
         [cond appendString:@" ) "];
     }
-
+    
     if (containsAudio) {
         if (![cond isEmpty]) {
             [cond appendString:@" OR "];
         }
-
+        
         [cond appendString:@" ( "];
         
         PMFilterOption *audioOption = optionGroup.audioOption;
@@ -1016,24 +1016,24 @@
         
         [cond appendString:@" ) "];
     }
-
+    
     [cond insertString:@"(" atIndex:0];
     [cond appendString:@")"];
-
+    
     PMDateOption *dateOption = optionGroup.dateOption;
     if (!dateOption.ignore) {
         [cond appendString:[dateOption dateCond:@"creationDate"]];
         [args addObjectsFromArray:[dateOption dateArgs]];
     }
-
+    
     PMDateOption *updateOption = optionGroup.updateOption;
     if (!updateOption.ignore) {
         [cond appendString:[updateOption dateCond:@"modificationDate"]];
         [args addObjectsFromArray:[updateOption dateArgs]];
     }
-
+    
     options.predicate = [NSPredicate predicateWithFormat:cond argumentArray:args];
-
+    
     return options;
 }
 
@@ -1122,7 +1122,7 @@
 
 - (void)saveImageWithPath:(NSString *)path title:(NSString *)title desc:(NSString *)desc block:(void (^)(PMAssetEntity *))block {
     [PMLogUtils.sharedInstance info:[NSString stringWithFormat:@"save image with path: %@ title:%@, desc: %@", path, title, desc]];
-
+    
     __block NSString *assetId = nil;
     [[PHPhotoLibrary sharedPhotoLibrary]
      performChanges:^{
@@ -1217,27 +1217,27 @@
 
 - (NSArray<PMAssetPathEntity *> *)getSubPathWithId:(NSString *)id type:(int)type albumType:(int)albumType option:(PMFilterOptionGroup *)option {
     PHFetchOptions *options = [self getAssetOptions:type filterOption:option];
-
+    
     if ([PMFolderUtils isRecentCollection:id]) {
         NSArray<PHCollectionList *> *array = [PMFolderUtils getRootFolderWithOptions:nil];
         return [self convertPHCollectionToPMAssetPathArray:array option:options];
     }
-
+    
     if (albumType == PM_TYPE_ALBUM) {
         return @[];
     }
-
+    
     PHCollectionList *list;
-
+    
     PHFetchResult<PHCollectionList *> *collectionList = [PHCollectionList fetchCollectionListsWithLocalIdentifiers:@[id] options:nil];
     if (collectionList && collectionList.count > 0) {
         list = collectionList.firstObject;
     }
-
+    
     if (!list) {
         return @[];
     }
-
+    
     NSArray<PHCollection *> *phCollectionArray = [PMFolderUtils getSubCollectionWithCollection:list options:options];
     return [self convertPHCollectionToPMAssetPathArray:phCollectionArray option:options];
 }
@@ -1245,11 +1245,11 @@
 - (NSArray<PMAssetPathEntity *> *)convertPHCollectionToPMAssetPathArray:(NSArray<PHCollection *> *)phArray
                                                                  option:(PHFetchOptions *)option {
     NSMutableArray<PMAssetPathEntity *> *result = [NSMutableArray new];
-
+    
     for (PHCollection *collection in phArray) {
         [result addObject:[self convertPHCollectionToPMPath:collection option:option]];
     }
-
+    
     return result;
 }
 
@@ -1264,13 +1264,13 @@
     } else {
         pathEntity.type = PM_TYPE_FOLDER;
     }
-
+    
     return pathEntity;
 }
 
 - (PHAssetCollection *)getCollectionWithId:(NSString *)galleryId {
     PHFetchResult<PHAssetCollection *> *fetchResult = [PHAssetCollection fetchAssetCollectionsWithLocalIdentifiers:@[galleryId] options:nil];
-
+    
     if (fetchResult && fetchResult.count > 0) {
         return fetchResult.firstObject;
     }
@@ -1279,42 +1279,42 @@
 
 - (void)copyAssetWithId:(NSString *)id toGallery:(NSString *)gallery block:(void (^)(PMAssetEntity *entity, NSString *msg))block {
     PMAssetEntity *assetEntity = [self getAssetEntity:id];
-
+    
     if (!assetEntity) {
         NSString *msg = [NSString stringWithFormat:@"not found asset : %@", id];
         block(nil, msg);
         return;
     }
-
+    
     __block PHAssetCollection *collection = [self getCollectionWithId:gallery];
-
+    
     if (!collection) {
         NSString *msg = [NSString stringWithFormat:@"not found collection with gallery id : %@", gallery];
         block(nil, msg);
         return;
     }
-
+    
     if (![collection canPerformEditOperation:PHCollectionEditOperationAddContent]) {
         block(nil, @"The collection can't add from user. The [collection canPerformEditOperation:PHCollectionEditOperationAddContent] return NO!");
         return;
     }
-
+    
     __block PHFetchResult<PHAsset *> *asset = [PHAsset fetchAssetsWithLocalIdentifiers:@[id] options:nil];
     NSError *error;
-
+    
     [PHPhotoLibrary.sharedPhotoLibrary
      performChangesAndWait:^{
         PHAssetCollectionChangeRequest *request = [PHAssetCollectionChangeRequest changeRequestForAssetCollection:collection];
         [request addAssets:asset];
         
     } error:&error];
-
+    
     if (error) {
         NSString *msg = [NSString stringWithFormat:@"Can't copy, error : %@ ", error];
         block(nil, msg);
         return;
     }
-
+    
     block(assetEntity, nil);
 }
 
@@ -1325,30 +1325,30 @@
         PHFetchResult<PHCollectionList *> *result = [PHCollectionList fetchCollectionListsWithLocalIdentifiers:@[id] options:nil];
         if (result && result.count > 0) {
             PHCollectionList *parent = result.firstObject;
-
+            
             [PHPhotoLibrary.sharedPhotoLibrary
              performChangesAndWait:^{
                 PHCollectionListChangeRequest *request = [PHCollectionListChangeRequest creationRequestForCollectionListWithTitle:name];
                 targetId = request.placeholderForCreatedCollectionList.localIdentifier;
             } error:&error];
-
+            
             if (error) {
                 NSLog(@"createFolderWithName 1: error : %@", error);
             }
-
+            
             [PHPhotoLibrary.sharedPhotoLibrary
              performChangesAndWait:^{
                 PHCollectionListChangeRequest *request = [PHCollectionListChangeRequest changeRequestForCollectionList:parent];
                 PHFetchResult<PHCollectionList *> *fetchResult = [PHCollectionList fetchCollectionListsWithLocalIdentifiers:@[targetId] options:nil];
                 [request addChildCollections:fetchResult];
             } error:&error];
-
-
+            
+            
             if (error) {
                 NSLog(@"createFolderWithName 2: error : %@", error);
             }
-
-
+            
+            
             block(targetId, error.localizedDescription);
 
         } else {
@@ -1361,13 +1361,13 @@
             PHCollectionListChangeRequest *request = [PHCollectionListChangeRequest creationRequestForCollectionListWithTitle:name];
             targetId = request.placeholderForCreatedCollectionList.localIdentifier;
         } error:&error];
-
+        
         if (error) {
             NSLog(@"createFolderWithName 3: error : %@", error);
         }
         block(targetId, error.localizedDescription);
     }
-
+    
 }
 
 - (void)createAlbumWithName:(NSString *)name parentId:(NSString *)id block:(void (^)(NSString *, NSString *))block {
@@ -1377,30 +1377,30 @@
         PHFetchResult<PHCollectionList *> *result = [PHCollectionList fetchCollectionListsWithLocalIdentifiers:@[id] options:nil];
         if (result && result.count > 0) {
             PHCollectionList *parent = result.firstObject;
-
+            
             [PHPhotoLibrary.sharedPhotoLibrary
              performChangesAndWait:^{
                 PHAssetCollectionChangeRequest *request = [PHAssetCollectionChangeRequest creationRequestForAssetCollectionWithTitle:name];
                 targetId = request.placeholderForCreatedAssetCollection.localIdentifier;
             } error:&error];
-
+            
             if (error) {
                 NSLog(@"createAlbumWithName 1: error : %@", error);
             }
-
+            
             [PHPhotoLibrary.sharedPhotoLibrary
              performChangesAndWait:^{
                 PHCollectionListChangeRequest *request = [PHCollectionListChangeRequest changeRequestForCollectionList:parent];
                 PHFetchResult<PHAssetCollection *> *fetchResult = [PHAssetCollection fetchAssetCollectionsWithLocalIdentifiers:@[targetId] options:nil];
                 [request addChildCollections:fetchResult];
             } error:&error];
-
+            
             if (error) {
                 NSLog(@"createAlbumWithName 2: error : %@", error);
             }
-
+            
             block(targetId, error.localizedDescription);
-
+            
         } else {
             block(nil, [NSString stringWithFormat:@"Cannot find folder : %@", id]);
             return;
@@ -1411,7 +1411,7 @@
             PHAssetCollectionChangeRequest *request = [PHAssetCollectionChangeRequest creationRequestForAssetCollectionWithTitle:name];
             targetId = request.placeholderForCreatedAssetCollection.localIdentifier;
         } error:&error];
-
+        
         if (error) {
             NSLog(@"createAlbumWithName 3: error : %@", error);
         }
@@ -1428,12 +1428,12 @@
         block(@"Can't found the collection.");
         return;
     }
-
+    
     if (![collection canPerformEditOperation:PHCollectionEditOperationRemoveContent]) {
         block(@"The collection cannot remove asset by user.");
         return;
     }
-
+    
     PHFetchResult<PHAsset *> *assetResult = [PHAsset fetchAssetsWithLocalIdentifiers:id options:nil];
     NSError *error;
     [PHPhotoLibrary.sharedPhotoLibrary
@@ -1445,7 +1445,7 @@
         block([NSString stringWithFormat:@"Remove error: %@", error]);
         return;
     }
-
+    
     block(nil);
 }
 
@@ -1472,14 +1472,14 @@
         [PHPhotoLibrary.sharedPhotoLibrary performChangesAndWait:^{
             [PHAssetCollectionChangeRequest deleteAssetCollections:@[collection]];
         }                                                  error:&error];
-
+        
         if (error) {
             block([NSString stringWithFormat:@"Remove error: %@", error]);
             return;
         }
-
+        
         block(nil);
-
+        
     } else if (type == 2) {
         PHFetchResult<PHCollectionList *> *fetchResult = [PHCollectionList fetchCollectionListsWithLocalIdentifiers:@[id] options:nil];
         PHCollectionList *collection = [self getFirstObjFromFetchResult:fetchResult];
@@ -1495,12 +1495,12 @@
         [PHPhotoLibrary.sharedPhotoLibrary performChangesAndWait:^{
             [PHCollectionListChangeRequest deleteCollectionLists:@[collection]];
         }                                                  error:&error];
-
+        
         if (error) {
             block([NSString stringWithFormat:@"Remove error: %@", error]);
             return;
         }
-
+        
         block(nil);
     } else {
         block(@"Not support the type");
@@ -1514,7 +1514,7 @@
         NSLog(@"Favoriting asset %@ failed: Asset not found.",id);
         return NO;
     }
-
+    
     NSError *error;
     BOOL canPerformEditOperation = [asset canPerformEditOperation:PHAssetEditOperationProperties];
     if (!canPerformEditOperation) {
@@ -1574,15 +1574,15 @@
 - (void)requestCacheAssetsThumb:(NSArray *)identifiers option:(PMThumbLoadOption *)option {
     PHFetchResult<PHAsset *> *fetchResult = [PHAsset fetchAssetsWithLocalIdentifiers:identifiers options:nil];
     NSMutableArray *array = [NSMutableArray new];
-
+    
     for (id asset in fetchResult) {
         [array addObject:asset];
     }
-
+    
     PHImageRequestOptions *options = [PHImageRequestOptions new];
     options.resizeMode = options.resizeMode;
     options.deliveryMode = option.deliveryMode;
-
+    
     [self.cachingManager startCachingImagesForAssets:array targetSize:[option makeSize] contentMode:option.contentMode options:options];
 }
 
@@ -1594,7 +1594,7 @@
     if (!handler) {
         return;
     }
-
+    
     [handler notify:progress state:state];
 }
 
@@ -1611,11 +1611,11 @@
     PHFetchResult<PHAssetCollection *> *fetchResult = [PHAssetCollection fetchAssetCollectionsWithLocalIdentifiers:@[pathId] options:nil];
     if (fetchResult.count > 0) {
         PHAssetCollection *collection = fetchResult.firstObject;
-
+        
         PHFetchOptions *options = [PHFetchOptions new];
         NSSortDescriptor *sortDescriptor = [NSSortDescriptor sortDescriptorWithKey:@"modificationDate" ascending:NO];
         options.sortDescriptors = @[sortDescriptor];
-
+        
         PHFetchResult<PHAsset *> *assets = [PHAsset fetchAssetsInAssetCollection:collection options:options];
         PHAsset *asset = assets.firstObject;
         path.modifiedDate = (long) asset.modificationDate.timeIntervalSince1970;
@@ -1623,4 +1623,3 @@
 }
 
 @end
-
