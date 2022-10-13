@@ -1,7 +1,3 @@
-//
-// Created by Caijinglong on 2019-09-09.
-//
-
 #import "PMNotificationManager.h"
 #import "PMConvertUtils.h"
 #import "core/PMLogUtils.h"
@@ -21,7 +17,7 @@
     if (self) {
         self.registrar = registrar;
         channel = [FlutterMethodChannel
-                   methodChannelWithName:@"top.kikt/photo_manager/notify"
+                   methodChannelWithName:@"com.fluttercandies/photo_manager/notify"
                    binaryMessenger:[registrar messenger]];
         _notifying = NO;
     }
@@ -29,8 +25,7 @@
     return self;
 }
 
-+ (instancetype)managerWithRegistrar:
-(NSObject<FlutterPluginRegistrar> *)registrar {
++ (instancetype)managerWithRegistrar:(NSObject<FlutterPluginRegistrar> *)registrar {
     return [[self alloc] initWithRegistrar:registrar];
 }
 
@@ -53,16 +48,14 @@
     if (!result) {
         return;
     }
-    
-    PHFetchResultChangeDetails *details =
-    [changeInstance changeDetailsForFetchResult:result];
-    
-    NSMutableDictionary *detailResult =
-    [self convertChangeDetailsToNotifyDetail:details];
-    
+    PHFetchResultChangeDetails *details = [changeInstance changeDetailsForFetchResult:result];
     NSUInteger oldCount = result.count;
     [self refreshFetchResult];
+    if (!result) {
+        return;
+    }
     NSUInteger newCount = result.count;
+    NSMutableDictionary *detailResult = [self convertChangeDetailsToNotifyDetail:details];
     detailResult[@"oldCount"] = @(oldCount);
     detailResult[@"newCount"] = @(newCount);
     
@@ -75,25 +68,16 @@
     result = [self getLastAssets];
 }
 
-- (NSMutableDictionary *)convertChangeDetailsToNotifyDetail:
-(PHFetchResultChangeDetails *)details {
+- (NSMutableDictionary *)convertChangeDetailsToNotifyDetail:(PHFetchResultChangeDetails *)details {
     NSMutableDictionary *dictionary = [NSMutableDictionary new];
     NSArray<PHObject *> *changedObjects = details.changedObjects;
     NSArray<PHObject *> *insertedObjects = details.insertedObjects;
     NSArray<PHObject *> *removedObjects = details.removedObjects;
     
-    [PMLogUtils.sharedInstance
-     info:[NSString stringWithFormat:@"changed = %@", changedObjects]];
-    [PMLogUtils.sharedInstance
-     info:[NSString stringWithFormat:@"inserted = %@", insertedObjects]];
-    [PMLogUtils.sharedInstance
-     info:[NSString stringWithFormat:@"removed = %@", removedObjects]];
-    
     [self addToResult:dictionary key:@"update" objects:changedObjects];
     [self addToResult:dictionary key:@"create" objects:insertedObjects];
     [self addToResult:dictionary key:@"delete" objects:removedObjects];
     
-    //  return @{@"platform": @"iOS", result: dictionary};
     return dictionary;
 }
 
@@ -127,6 +111,11 @@
 }
 
 - (PHFetchResult<PHAsset *> *)getLastAssets {
+    if (@available(iOS 14, *)) {
+        if (PHPhotoLibrary.authorizationStatus == PHAuthorizationStatusLimited) {
+            return [PHAsset fetchAssetsWithOptions:nil];
+        }
+    }
     if (PHPhotoLibrary.authorizationStatus == PHAuthorizationStatusAuthorized) {
         return [PHAsset fetchAssetsWithOptions:nil];
     }

@@ -1,10 +1,11 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:photo_manager_example/page/image_list_page.dart';
-import 'package:photo_manager_example/page/sub_gallery_page.dart';
 import 'package:oktoast/oktoast.dart';
 import 'package:photo_manager/photo_manager.dart';
+
+import '../page/image_list_page.dart';
+import '../page/sub_gallery_page.dart';
 
 import 'dialog/list_dialog.dart';
 
@@ -18,76 +19,68 @@ class GalleryItemWidget extends StatelessWidget {
   final AssetPathEntity path;
   final ValueSetter<VoidCallback> setState;
 
-  @override
-  Widget build(BuildContext context) {
-    return buildGalleryItemWidget(path, context);
-  }
-
   Widget buildGalleryItemWidget(AssetPathEntity item, BuildContext context) {
     return GestureDetector(
       child: ListTile(
         title: Text(item.name),
-        subtitle: Text("count : ${item.assetCount}"),
+        subtitle: FutureBuilder<int>(
+          future: item.assetCountAsync,
+          builder: (_, AsyncSnapshot<int> data) {
+            if (data.hasData) {
+              return Text('count : ${data.data}');
+            }
+            return const SizedBox.shrink();
+          },
+        ),
         trailing: _buildSubButton(item),
       ),
-      onTap: () {
-        if (item.assetCount == 0) {
-          showToast("The asset count is 0.");
-          return;
-        }
+      onTap: () async {
         if (item.albumType == 2) {
           showToast("The folder can't get asset");
           return;
         }
-
-        Navigator.of(context).push(
-          MaterialPageRoute(
+        if (await item.assetCountAsync == 0) {
+          showToast('The asset count is 0.');
+          return;
+        }
+        Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(
             builder: (_) => GalleryContentListPage(
               path: item,
             ),
           ),
         );
       },
-      onLongPress: () async {
-        showDialog(
-          context: context,
-          builder: (_) {
-            return ListDialog(
-              children: [
-                ElevatedButton(
-                  child: Text("refresh properties"),
-                  onPressed: () async {
-                    await item.refreshPathProperties();
-                    setState(() {});
-                  },
-                ),
-                ElevatedButton(
-                  child: Text("Delete self (${item.name})"),
-                  onPressed: () async {
-                    if (!(Platform.isIOS || Platform.isMacOS)) {
-                      showToast("The function only support iOS.");
-                      return;
-                    }
-                    PhotoManager.editor.iOS.deletePath(path);
-                  },
-                ),
-                ElevatedButton(
-                  child: Text("Show modified date"),
-                  onPressed: () async {
-                    showToast('modified date = ${item.lastModified}');
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      },
+      onLongPress: () => showDialog<void>(
+        context: context,
+        builder: (_) {
+          return ListDialog(
+            children: <Widget>[
+              ElevatedButton(
+                child: Text('Delete self (${item.name})'),
+                onPressed: () async {
+                  if (!(Platform.isIOS || Platform.isMacOS)) {
+                    showToast('The function only support iOS.');
+                    return;
+                  }
+                  PhotoManager.editor.iOS.deletePath(path);
+                },
+              ),
+              ElevatedButton(
+                child: const Text('Show modified date'),
+                onPressed: () async {
+                  showToast('modified date = ${item.lastModified}');
+                },
+              ),
+            ],
+          );
+        },
+      ),
       // onDoubleTap: () async {
       //   final list =
       //       await item.getAssetListRange(start: 0, end: item.assetCount);
       //   for (var i = 0; i < list.length; i++) {
       //     final asset = list[i];
-      //     debugPrint("$i : ${asset.id}");
       //   }
       // },
     );
@@ -96,24 +89,26 @@ class GalleryItemWidget extends StatelessWidget {
   Widget _buildSubButton(AssetPathEntity item) {
     if (item.isAll || item.albumType == 2) {
       return Builder(
-        builder: (ctx) => ElevatedButton(
+        builder: (BuildContext ctx) => ElevatedButton(
           onPressed: () async {
-            final sub = await item.getSubPathList();
-            Navigator.push(ctx, MaterialPageRoute(builder: (_) {
-              return SubFolderPage(
-                title: item.name,
-                pathList: sub,
-              );
-            }));
+            final List<AssetPathEntity> sub = await item.getSubPathList();
+            // ignore: use_build_context_synchronously
+            Navigator.push(
+              ctx,
+              MaterialPageRoute<void>(
+                builder: (_) => SubFolderPage(title: item.name, pathList: sub),
+              ),
+            );
           },
-          child: Text("folder"),
+          child: const Text('folder'),
         ),
       );
-    } else {
-      return Container(
-        width: 0,
-        height: 0,
-      );
     }
+    return const SizedBox.shrink();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return buildGalleryItemWidget(path, context);
   }
 }

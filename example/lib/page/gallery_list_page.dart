@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:photo_manager_example/model/photo_provider.dart';
-import 'package:photo_manager_example/widget/gallery_item_widget.dart';
+import 'package:photo_manager/photo_manager.dart';
 import 'package:provider/provider.dart';
+
+import '../model/photo_provider.dart';
+import '../widget/gallery_item_widget.dart';
 
 class GalleryListPage extends StatefulWidget {
   const GalleryListPage({Key? key}) : super(key: key);
 
   @override
-  _GalleryListPageState createState() => _GalleryListPageState();
+  State<GalleryListPage> createState() => _GalleryListPageState();
 }
 
 class _GalleryListPageState extends State<GalleryListPage> {
@@ -17,21 +19,19 @@ class _GalleryListPageState extends State<GalleryListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Gallery list"),
+        title: const Text('Gallery list'),
       ),
-      body: Container(
-        child: Scrollbar(
-          child: ListView.builder(
-            itemBuilder: _buildItem,
-            itemCount: provider.list.length,
-          ),
+      body: Scrollbar(
+        child: ListView.builder(
+          itemBuilder: _buildItem,
+          itemCount: provider.list.length,
         ),
       ),
     );
   }
 
   Widget _buildItem(BuildContext context, int index) {
-    final item = provider.list[index];
+    final AssetPathEntity item = provider.list[index];
     return GalleryItemWidget(
       path: item,
       setState: setState,

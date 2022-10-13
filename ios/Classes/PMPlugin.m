@@ -1,7 +1,3 @@
-//
-// Created by Caijinglong on 2019-09-06.
-//
-
 #import "PMPlugin.h"
 #import "PMConvertUtils.h"
 #import "PMAssetPathEntity.h"
@@ -27,7 +23,7 @@
     [self initNotificationManager:registrar];
     
     FlutterMethodChannel *channel =
-    [FlutterMethodChannel methodChannelWithName:@"top.kikt/photo_manager"
+    [FlutterMethodChannel methodChannelWithName:@"com.fluttercandies/photo_manager"
                                 binaryMessenger:[registrar messenger]];
     PMManager *manager = [PMManager new];
     manager.converter = [PMConverter new];
@@ -60,7 +56,7 @@
         ignoreCheckPermission = [call.arguments[@"ignore"] boolValue];
         [handler reply:@(ignoreCheckPermission)];
     } else if ([call.method isEqualToString:@"log"]) {
-        PMLogUtils.sharedInstance.isLog = (BOOL) call.arguments;
+        PMLogUtils.sharedInstance.isLog = [call.arguments boolValue];
         [handler reply:@1];
     } else if (manager.isAuth) {
         [self onAuth:call result:result];
@@ -234,68 +230,74 @@
     __block PMNotificationManager *notificationManager = self.notificationManager;
     
     [self runInBackground:^{
-        if ([call.method isEqualToString:@"getGalleryList"]) {
-            
+        if ([call.method isEqualToString:@"getAssetPathList"]) {
             int type = [call.arguments[@"type"] intValue];
             BOOL hasAll = [call.arguments[@"hasAll"] boolValue];
             BOOL onlyAll = [call.arguments[@"onlyAll"] boolValue];
             PMFilterOptionGroup *option =
             [PMConvertUtils convertMapToOptionContainer:call.arguments[@"option"]];
-            NSArray<PMAssetPathEntity *> *array = [manager getGalleryList:type hasAll:hasAll onlyAll:onlyAll option:option];
-            
-            if (option.containsModified) {
-                for (PMAssetPathEntity *path in array) {
-                    [manager injectModifyToDate:path];
-                }
-            }
-            
+            NSArray<PMAssetPathEntity *> *array = [manager
+                                                   getAssetPathList:type
+                                                   hasAll:hasAll
+                                                   onlyAll:onlyAll
+                                                   option:option];
             NSDictionary *dictionary = [PMConvertUtils convertPathToMap:array];
             [handler reply:dictionary];
-            
-            
-        } else if ([call.method isEqualToString:@"getAssetWithGalleryId"]) {
+        } else if ([call.method isEqualToString:@"getAssetCountFromPath"]) {
+            NSString *id = call.arguments[@"id"];
+            int requestType = [call.arguments[@"type"] intValue];
+            PMFilterOptionGroup *option =
+            [PMConvertUtils convertMapToOptionContainer:call.arguments[@"option"]];
+            NSUInteger result = [manager getAssetCountFromPath:id
+                                                          type:requestType
+                                                  filterOption:option];
+            [handler reply:@(result)];
+        } else if ([call.method isEqualToString:@"getAssetListPaged"]) {
             NSString *id = call.arguments[@"id"];
             int type = [call.arguments[@"type"] intValue];
             NSUInteger page = [call.arguments[@"page"] unsignedIntValue];
-            NSUInteger pageCount = [call.arguments[@"pageCount"] unsignedIntValue];
+            NSUInteger size = [call.arguments[@"size"] unsignedIntValue];
             PMFilterOptionGroup *option =
             [PMConvertUtils convertMapToOptionContainer:call.arguments[@"option"]];
             NSArray<PMAssetEntity *> *array =
-            [manager getAssetEntityListWithGalleryId:id type:type page:page pageCount:pageCount filterOption:option];
+            [manager getAssetListPaged:id type:type page:page size:size filterOption:option];
             NSDictionary *dictionary =
             [PMConvertUtils convertAssetToMap:array optionGroup:option];
             [handler reply:dictionary];
-            
-        } else if ([call.method isEqualToString:@"getAssetListWithRange"]) {
-            NSString *galleryId = call.arguments[@"galleryId"];
-            NSUInteger type = [call.arguments[@"type"] unsignedIntegerValue];
+        } else if ([call.method isEqualToString:@"getAssetListRange"]) {
+            NSString *id = call.arguments[@"id"];
+            int type = [call.arguments[@"type"] intValue];
             NSUInteger start = [call.arguments[@"start"] unsignedIntegerValue];
             NSUInteger end = [call.arguments[@"end"] unsignedIntegerValue];
             PMFilterOptionGroup *option =
             [PMConvertUtils convertMapToOptionContainer:call.arguments[@"option"]];
             NSArray<PMAssetEntity *> *array =
-            [manager getAssetEntityListWithRange:galleryId type:type start:start end:end filterOption:option];
+            [manager getAssetListRange:id type:type start:start end:end filterOption:option];
             NSDictionary *dictionary =
             [PMConvertUtils convertAssetToMap:array optionGroup:option];
             [handler reply:dictionary];
-            
         } else if ([call.method isEqualToString:@"getThumb"]) {
             NSString *id = call.arguments[@"id"];
             NSDictionary *dict = call.arguments[@"option"];
             PMProgressHandler *progressHandler = [self getProgressHandlerFromDict:call.arguments];
             PMThumbLoadOption *option = [PMThumbLoadOption optionDict:dict];
-            
-            [manager getThumbWithId:id option:option resultHandler:handler progressHandler:progressHandler];
-            
+            [manager getThumbWithId:id
+                             option:option
+                      resultHandler:handler
+                    progressHandler:progressHandler];
         } else if ([call.method isEqualToString:@"getFullFile"]) {
             NSString *id = call.arguments[@"id"];
             BOOL isOrigin = [call.arguments[@"isOrigin"] boolValue];
+            int subtype = [call.arguments[@"subtype"] intValue];
             PMProgressHandler *progressHandler = [self getProgressHandlerFromDict:call.arguments];
-            
-            [manager getFullSizeFileWithId:id isOrigin:isOrigin resultHandler:handler progressHandler:progressHandler];
-            
-        } else if ([call.method isEqualToString:@"releaseMemCache"]) {
+            [manager getFullSizeFileWithId:id
+                                  isOrigin:isOrigin
+                                   subtype:subtype
+                             resultHandler:handler
+                           progressHandler:progressHandler];
+        } else if ([call.method isEqualToString:@"releaseMemoryCache"]) {
             [manager clearCache];
+            [handler reply:nil];
         } else if ([call.method isEqualToString:@"fetchPathProperties"]) {
             NSString *id = call.arguments[@"id"];
             int requestType = [call.arguments[@"type"] intValue];
@@ -321,7 +323,7 @@
             } else {
                 [notificationManager stopNotify];
             }
-            
+            [handler reply:nil];
         } else if ([call.method isEqualToString:@"isNotifying"]) {
             BOOL isNotifying = [notificationManager isNotifying];
             [handler reply:@(isNotifying)];
@@ -332,12 +334,10 @@
                       changedBlock:^(NSArray<NSString *> *array) {
                 [handler reply:array];
             }];
-            
         } else if ([call.method isEqualToString:@"saveImage"]) {
             NSData *data = [call.arguments[@"image"] data];
             NSString *title = call.arguments[@"title"];
             NSString *desc = call.arguments[@"desc"];
-            
             [manager saveImage:data
                          title:title
                           desc:desc
@@ -346,16 +346,12 @@
                     [handler reply:nil];
                     return;
                 }
-                NSDictionary *resultData =
-                [PMConvertUtils convertPMAssetToMap:asset needTitle:NO];
-                [handler reply:@{@"data": resultData}];
+                [handler reply:[PMConvertUtils convertPMAssetToMap:asset needTitle:NO]];
             }];
-            
         } else if ([call.method isEqualToString:@"saveImageWithPath"]) {
             NSString *path = call.arguments[@"path"];
             NSString *title = call.arguments[@"title"];
             NSString *desc = call.arguments[@"desc"];
-            
             [manager saveImageWithPath:path
                                  title:title
                                   desc:desc
@@ -364,16 +360,12 @@
                     [handler reply:nil];
                     return;
                 }
-                NSDictionary *resultData =
-                [PMConvertUtils convertPMAssetToMap:asset needTitle:NO];
-                [handler reply:@{@"data": resultData}];
+                [handler reply:[PMConvertUtils convertPMAssetToMap:asset needTitle:NO]];
             }];
-            
         } else if ([call.method isEqualToString:@"saveVideo"]) {
             NSString *videoPath = call.arguments[@"path"];
             NSString *title = call.arguments[@"title"];
             NSString *desc = call.arguments[@"desc"];
-            
             [manager saveVideo:videoPath
                          title:title
                           desc:desc
@@ -382,9 +374,7 @@
                     [handler reply:nil];
                     return;
                 }
-                NSDictionary *resultData =
-                [PMConvertUtils convertPMAssetToMap:asset needTitle:NO];
-                [handler reply:@{@"data": resultData}];
+                [handler reply:[PMConvertUtils convertPMAssetToMap:asset needTitle:NO]];
             }];
         } else if ([call.method isEqualToString:@"assetExists"]) {
             NSString *assetId = call.arguments[@"id"];
@@ -392,23 +382,28 @@
             [handler reply:@(exists)];
         } else if ([call.method isEqualToString:@"isLocallyAvailable"]) {
             NSString *assetId = call.arguments[@"id"];
-            BOOL exists = [manager entityIsLocallyAvailable:assetId];
+            BOOL isOrigin = [call.arguments[@"isOrigin"] boolValue];
+            BOOL exists = [manager entityIsLocallyAvailable:assetId resource:nil isOrigin:isOrigin];
             [handler reply:@(exists)];
         } else if ([call.method isEqualToString:@"getTitleAsync"]) {
             NSString *assetId = call.arguments[@"id"];
-            NSString *title = [manager getTitleAsyncWithAssetId:assetId];
+            int subtype = [call.arguments[@"subtype"] intValue];
+            NSString *title = [manager getTitleAsyncWithAssetId:assetId subtype:subtype];
             [handler reply:title];
+        } else if ([call.method isEqualToString:@"getMimeTypeAsync"]) {
+            NSString *assetId = call.arguments[@"id"];
+            NSString *mimeType = [manager getMimeTypeAsyncWithAssetId:assetId];
+            [handler reply:mimeType];
         } else if ([@"getMediaUrl" isEqualToString:call.method]) {
             [manager getMediaUrl:call.arguments[@"id"] resultHandler:handler];
-        } else if ([@"getPropertiesFromAssetEntity" isEqualToString:call.method]) {
+        } else if ([@"fetchEntityProperties" isEqualToString:call.method]) {
             NSString *assetId = call.arguments[@"id"];
-            PMAssetEntity *entity = [manager getAssetEntity:assetId];
+            PMAssetEntity *entity = [manager getAssetEntity:assetId withCache:NO];
             if (entity == nil) {
                 [handler reply:nil];
                 return;
             }
-            NSDictionary *resultMap = [PMConvertUtils convertPMAssetToMap:entity needTitle:YES];
-            [handler reply:@{@"data": resultMap}];
+            [handler reply:[PMConvertUtils convertPMAssetToMap:entity needTitle:YES]];
         } else if ([@"getSubPath" isEqualToString:call.method]) {
             NSString *galleryId = call.arguments[@"id"];
             int type = [call.arguments[@"type"] intValue];
@@ -431,7 +426,6 @@
                     [handler reply:[PMConvertUtils convertPMAssetToMap:entity needTitle:NO]];
                 }
             }];
-            
         } else if ([@"createFolder" isEqualToString:call.method]) {
             if (self->ignoreCheckPermission) {
                 [self createFolder:call manager:manager handler:handler];
@@ -473,7 +467,6 @@
                     [handler reply:@{@"success": @YES}];
                 }
             }];
-            
         } else if ([@"deleteAlbum" isEqualToString:call.method]) {
             NSString *id = call.arguments[@"id"];
             int type = [call.arguments[@"type"] intValue];
@@ -486,12 +479,9 @@
             }];
         } else if ([@"favoriteAsset" isEqualToString:call.method]) {
             NSString *id = call.arguments[@"id"];
-            BOOL favorite = [call.arguments[@"type"] boolValue];
+            BOOL favorite = [call.arguments[@"favorite"] boolValue];
             BOOL favoriteResult = [manager favoriteWithId:id favorite:favorite];
-            
             [handler reply:@(favoriteResult)];
-        } else if ([@"isAuth" isEqualToString:call.method]) {
-            [handler reply:@YES];
         } else if ([@"requestCacheAssetsThumb" isEqualToString:call.method]) {
             NSArray *ids = call.arguments[@"ids"];
             PMThumbLoadOption *option = [PMThumbLoadOption optionDict:call.arguments[@"option"]];
@@ -504,7 +494,6 @@
             [handler notImplemented];
         }
     }];
-    
 }
 
 - (NSDictionary *)convertToResult:(NSString *)id errorMsg:(NSString *)errorMsg {

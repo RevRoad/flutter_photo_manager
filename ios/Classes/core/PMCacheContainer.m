@@ -1,7 +1,3 @@
-//
-// Created by Caijinglong on 2019-09-06.
-//
-
 #import "PMCacheContainer.h"
 #import "PMAssetPathEntity.h"
 #import <AVFoundation/AVAsset.h>
@@ -20,7 +16,9 @@
 }
 
 - (void)putAssetEntity:(PMAssetEntity *)entity {
-    map[entity.id] = entity;
+    @synchronized (map) {
+        self->map[entity.id] = entity;
+    }
 }
 
 - (PMAssetEntity *)getAssetEntity:(NSString *)id {
@@ -28,7 +26,9 @@
 }
 
 - (void)clearCache {
-    [map removeAllObjects];
+    @synchronized (map) {
+        [self->map removeAllObjects];
+    }
 }
 
 @end

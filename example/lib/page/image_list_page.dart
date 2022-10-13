@@ -1,22 +1,21 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:photo_manager_example/develop/upload_to_dev_serve.dart';
-import 'package:photo_manager_example/model/photo_provider.dart';
-import 'package:photo_manager_example/page/detail_page.dart';
-import 'package:photo_manager_example/util/common_util.dart';
-import 'package:photo_manager_example/widget/dialog/list_dialog.dart';
-import 'package:photo_manager_example/widget/image_item_widget.dart';
-import 'package:photo_manager_example/widget/loading_widget.dart';
-
 import 'package:photo_manager/photo_manager.dart';
 import 'package:provider/provider.dart';
 
+import '../model/photo_provider.dart';
+import '../util/common_util.dart';
+import '../util/log.dart';
+import '../widget/dialog/list_dialog.dart';
+import '../widget/image_item_widget.dart';
+import '../widget/loading_widget.dart';
+
 import 'copy_to_another_gallery_example.dart';
+import 'detail_page.dart';
 import 'move_to_another_gallery_example.dart';
-import 'dart:ui' as ui;
 
 class GalleryContentListPage extends StatefulWidget {
   const GalleryContentListPage({
@@ -27,13 +26,13 @@ class GalleryContentListPage extends StatefulWidget {
   final AssetPathEntity path;
 
   @override
-  _GalleryContentListPageState createState() => _GalleryContentListPageState();
+  State<GalleryContentListPage> createState() => _GalleryContentListPageState();
 }
 
 class _GalleryContentListPageState extends State<GalleryContentListPage> {
-  AssetPathEntity get path => widget.path;
+  late final PhotoProvider photoProvider = Provider.of<PhotoProvider>(context);
 
-  PhotoProvider get photoProvider => Provider.of<PhotoProvider>(context);
+  AssetPathEntity get path => widget.path;
 
   AssetPathProvider readPathProvider(BuildContext c) =>
       c.read<AssetPathProvider>();
@@ -41,12 +40,10 @@ class _GalleryContentListPageState extends State<GalleryContentListPage> {
   AssetPathProvider watchPathProvider(BuildContext c) =>
       c.watch<AssetPathProvider>();
 
-  List<AssetEntity> checked = [];
-
   @override
   void initState() {
     super.initState();
-    path.getAssetListRange(start: 0, end: path.assetCount).then((value) {
+    path.getAssetListRange(start: 0, end: 1).then((List<AssetEntity> value) {
       if (value.isEmpty) {
         return;
       }
@@ -66,209 +63,171 @@ class _GalleryContentListPageState extends State<GalleryContentListPage> {
     super.dispose();
   }
 
-  ThumbOption get thumbOption => ThumbOption(
-        width: 130,
-        height: 130,
+  ThumbnailOption get thumbOption => ThumbnailOption(
+        size: const ThumbnailSize.square(200),
         format: photoProvider.thumbFormat,
       );
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
+    return ChangeNotifierProvider<AssetPathProvider>(
       create: (_) => AssetPathProvider(widget.path),
       builder: (BuildContext context, _) => Scaffold(
-        appBar: AppBar(
-          title: Text("${path.name}"),
-          actions: <Widget>[
-            IconButton(
-              icon: Icon(
-                Icons.delete,
-              ),
-              tooltip: 'Delete selected ',
-              onPressed: () {
-                readPathProvider(context);
-              },
-            ),
-            AnimatedBuilder(
-              animation: photoProvider,
-              builder: (_, __) {
-                final formatType = photoProvider.thumbFormat == ThumbFormat.jpeg
-                    ? ThumbFormat.png
-                    : ThumbFormat.jpeg;
-                return IconButton(
-                  icon: Icon(Icons.swap_horiz),
-                  iconSize: 22,
-                  tooltip: "Use another format.",
-                  onPressed: () {
-                    photoProvider.thumbFormat = formatType;
-                  },
-                );
-              },
-            ),
-            Tooltip(
-              child: Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: Icon(
-                  Icons.info_outline,
-                  size: 22,
-                ),
-              ),
-              message: "Long tap to delete item.",
-            ),
-          ],
-        ),
-        body: buildRefreshIndicator(context, path.assetCount),
+        appBar: AppBar(title: Text(path.name)),
+        body: buildRefreshIndicator(context),
       ),
     );
   }
 
-  Widget buildRefreshIndicator(BuildContext context, int length) {
+  Widget buildRefreshIndicator(BuildContext context) {
     return RefreshIndicator(
       onRefresh: () => _onRefresh(context),
       child: Scrollbar(
-        child: GridView.builder(
-          itemBuilder: _buildItem,
-          itemCount: watchPathProvider(context).showItemCount,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
-          ),
+        child: CustomScrollView(
+          slivers: <Widget>[
+            Consumer<AssetPathProvider>(
+              builder: (BuildContext c, AssetPathProvider p, _) => SliverGrid(
+                delegate: SliverChildBuilderDelegate(
+                  (_, int index) => Builder(
+                    builder: (BuildContext c) => _buildItem(context, index),
+                  ),
+                  childCount: p.showItemCount,
+                  findChildIndexCallback: (Key? key) {
+                    if (key is ValueKey<String>) {
+                      return findChildIndexBuilder(
+                        id: key.value,
+                        assets: p.list,
+                      );
+                    }
+                    return null;
+                  },
+                ),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  mainAxisSpacing: 2,
+                  crossAxisCount: 4,
+                  crossAxisSpacing: 2,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildItem(BuildContext context, int index) {
-    final list = watchPathProvider(context).list;
+    final List<AssetEntity> list = watchPathProvider(context).list;
     if (list.length == index) {
       onLoadMore(context);
       return loadWidget;
     }
-
     if (index > list.length) {
-      return Container();
+      return const SizedBox.shrink();
     }
-
-    final entity = list[index];
-
-    Widget previewOriginBytesWidget;
-
-    if (entity.type != AssetType.image) {
-      previewOriginBytesWidget = Container();
-    } else {
-      previewOriginBytesWidget = ElevatedButton(
-        child: Text("Show origin bytes image in dialog"),
-        onPressed: () => showOriginBytes(entity),
-      );
-    }
-
-    return GestureDetector(
-      onTap: () async {
-        showDialog(
-          context: context,
-          builder: (_) => ListDialog(
-            children: <Widget>[
-              previewOriginBytesWidget,
+    AssetEntity entity = list[index];
+    return ImageItemWidget(
+      key: ValueKey<int>(entity.hashCode),
+      entity: entity,
+      option: thumbOption,
+      onTap: () => showDialog<void>(
+        context: context,
+        builder: (_) => ListDialog(
+          children: <Widget>[
+            if (entity.type == AssetType.image)
               ElevatedButton(
-                child: Text("isLocallyAvailable"),
-                onPressed: () => entity.isLocallyAvailable.then(
-                  (bool r) => print('isLocallyAvailable: $r'),
-                ),
+                child: const Text('Show origin bytes image in dialog'),
+                onPressed: () => showOriginBytes(entity),
               ),
+            ElevatedButton(
+              child: const Text('isLocallyAvailable (for .file)'),
+              onPressed: () => entity.isLocallyAvailable().then((bool r) {
+                Log.d('isLocallyAvailable: $r');
+              }),
+            ),
+            if (entity.type == AssetType.video ||
+                entity.type == AssetType.audio)
               ElevatedButton(
-                child: Text("getMediaUrl"),
+                child: const Text('getMediaUrl'),
                 onPressed: () async {
-                  Stopwatch watch = Stopwatch()..start();
+                  final Stopwatch watch = Stopwatch()..start();
                   final String? url = await entity.getMediaUrl();
                   watch.stop();
-                  print('Media URL: $url');
-                  print(watch.elapsed);
+                  Log.d('Media URL: $url');
+                  Log.d(watch.elapsed);
                 },
               ),
-              ElevatedButton(
-                child: Text("Show detail page"),
-                onPressed: () => routeToDetailPage(entity),
-              ),
-              ElevatedButton(
-                child: Text("Show info dialog"),
-                onPressed: () => CommonUtil.showInfoDialog(context, entity),
-              ),
-              ElevatedButton(
-                child: Text("show 500 size thumb "),
-                onPressed: () => showThumb(entity, 500),
-              ),
-              ElevatedButton(
-                child: Text("Delete item"),
-                onPressed: () => _deleteCurrent(entity),
-              ),
-              ElevatedButton(
-                child: Text("Upload to my test server."),
-                onPressed: () => UploadToDevServer.upload(entity),
-              ),
-              ElevatedButton(
-                child: Text("Copy to another path"),
-                onPressed: () => copyToAnotherPath(entity),
-              ),
-              _buildMoveAnotherPath(entity),
-              _buildRemoveInAlbumWidget(entity),
-              ElevatedButton(
-                child: Text("Test progress"),
-                onPressed: () => testProgressHandler(entity),
-              ),
-              ElevatedButton(
-                child: Text("Test thumb size"),
-                onPressed: () =>
-                    testThumbSize(entity, [500, 600, 700, 1000, 1500, 2000]),
-              ),
-            ],
-          ),
-        );
-      },
-      onLongPress: () {
-        if (checked.contains(entity)) {
-          checked.remove(entity);
-        } else {
-          checked.add(entity);
-        }
-        setState(() {});
-      },
-      child: Stack(
-        children: [
-          ImageItemWidget(
-            key: ValueKey(entity),
-            entity: entity,
-            option: thumbOption,
-          ),
-          Align(
-            alignment: Alignment.topRight,
-            child: Checkbox(
-              value: checked.contains(entity),
-              onChanged: (value) {
-                if (checked.contains(entity)) {
-                  checked.remove(entity);
-                } else {
-                  checked.add(entity);
-                }
-                setState(() {});
-              },
+            ElevatedButton(
+              child: const Text('Show detail page'),
+              onPressed: () => routeToDetailPage(entity),
             ),
-          ),
-        ],
+            ElevatedButton(
+              child: const Text('Show info dialog'),
+              onPressed: () => CommonUtil.showInfoDialog(context, entity),
+            ),
+            ElevatedButton(
+              child: const Text('show 500 size thumb '),
+              onPressed: () => showThumb(entity, 500),
+            ),
+            ElevatedButton(
+              child: const Text('Delete item'),
+              onPressed: () => _deleteCurrent(context, entity),
+            ),
+            ElevatedButton(
+              child: const Text('Copy to another path'),
+              onPressed: () => copyToAnotherPath(entity),
+            ),
+            _buildMoveAnotherPath(entity),
+            _buildRemoveInAlbumWidget(entity),
+            ElevatedButton(
+              child: const Text('Test progress'),
+              onPressed: () => testProgressHandler(entity),
+            ),
+            ElevatedButton(
+              child: const Text('Test thumb size'),
+              onPressed: () => testThumbSize(
+                entity,
+                <int>[500, 600, 700, 1000, 1500, 2000],
+              ),
+            ),
+            if (Platform.isIOS)
+              ElevatedButton(
+                child: const Text('Toggle isFavorite'),
+                onPressed: () async {
+                  final bool isFavorite = entity.isFavorite;
+                  print('Current isFavorite: $isFavorite');
+                  await PhotoManager.editor.iOS.favoriteAsset(
+                    entity: entity,
+                    favorite: !isFavorite,
+                  );
+                  final AssetEntity? newEntity =
+                      await entity.obtainForNewProperties();
+                  print('New isFavorite: ${newEntity?.isFavorite}');
+                  if (!mounted) {
+                    return;
+                  }
+                  if (newEntity != null) {
+                    entity = newEntity;
+                    readPathProvider(context).list[index] = newEntity;
+                    setState(() {});
+                  }
+                },
+              ),
+          ],
+        ),
       ),
     );
   }
 
-  void routeToDetailPage(AssetEntity entity) async {
-    final mediaUrl = await entity.getMediaUrl();
-    final page = DetailPage(
-      entity: entity,
-      mediaUrl: mediaUrl,
-    );
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (BuildContext context) {
-          return page;
-        },
-      ),
+  int findChildIndexBuilder({
+    required String id,
+    required List<AssetEntity> assets,
+  }) {
+    return assets.indexWhere((AssetEntity e) => e.id == id);
+  }
+
+  Future<void> routeToDetailPage(AssetEntity entity) async {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(builder: (_) => DetailPage(entity: entity)),
     );
   }
 
@@ -286,15 +245,15 @@ class _GalleryContentListPageState extends State<GalleryContentListPage> {
     await readPathProvider(context).onRefresh();
   }
 
-  void _deleteCurrent(AssetEntity entity) async {
+  Future<void> _deleteCurrent(BuildContext context, AssetEntity entity) async {
     if (Platform.isAndroid) {
-      final dialog = AlertDialog(
-        title: Text("Delete the asset"),
+      final AlertDialog dialog = AlertDialog(
+        title: const Text('Delete the asset'),
         actions: <Widget>[
           TextButton(
-            child: Text(
-              "delete",
-              style: const TextStyle(color: Colors.red),
+            child: const Text(
+              'delete',
+              style: TextStyle(color: Colors.red),
             ),
             onPressed: () async {
               readPathProvider(context).delete(entity);
@@ -302,12 +261,12 @@ class _GalleryContentListPageState extends State<GalleryContentListPage> {
             },
           ),
           TextButton(
-            child: Text("cancel"),
+            child: const Text('cancel'),
             onPressed: () => Navigator.pop(context),
           ),
         ],
       );
-      showDialog(context: context, builder: (_) => dialog);
+      showDialog<void>(context: context, builder: (_) => dialog);
     } else {
       readPathProvider(context).delete(entity);
     }
@@ -320,40 +279,41 @@ class _GalleryContentListPageState extends State<GalleryContentListPage> {
     } else {
       title = entity.title!;
     }
-    print("entity.title = $title");
-    showDialog(
-        context: context,
-        builder: (_) {
-          return FutureBuilder<Uint8List?>(
-            future: entity.originBytes,
-            builder: (BuildContext context, snapshot) {
-              Widget w;
-              if (snapshot.hasError) {
-                return ErrorWidget(snapshot.error!);
-              } else if (snapshot.hasData) {
-                w = Image.memory(snapshot.data!);
-              } else {
-                w = Center(
-                  child: Container(
-                    color: Colors.white,
-                    padding: const EdgeInsets.all(20),
-                    child: CircularProgressIndicator(),
-                  ),
-                );
-              }
-              return GestureDetector(
-                child: w,
-                onTap: () => Navigator.pop(context),
+    Log.d('entity.title = $title');
+    showDialog<void>(
+      context: context,
+      builder: (_) {
+        return FutureBuilder<Uint8List?>(
+          future: entity.originBytes,
+          builder: (BuildContext context, AsyncSnapshot<Uint8List?> snapshot) {
+            Widget w;
+            if (snapshot.hasError) {
+              return ErrorWidget(snapshot.error!);
+            } else if (snapshot.hasData) {
+              w = Image.memory(snapshot.data!);
+            } else {
+              w = Center(
+                child: Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.all(20),
+                  child: const CircularProgressIndicator(),
+                ),
               );
-            },
-          );
-        });
+            }
+            return GestureDetector(
+              child: w,
+              onTap: () => Navigator.pop(context),
+            );
+          },
+        );
+      },
+    );
   }
 
-  void copyToAnotherPath(AssetEntity entity) async {
-    Navigator.push(
+  Future<void> copyToAnotherPath(AssetEntity entity) {
+    return Navigator.push(
       context,
-      MaterialPageRoute(
+      MaterialPageRoute<void>(
         builder: (_) => CopyToAnotherGalleryPage(assetEntity: entity),
       ),
     );
@@ -365,12 +325,12 @@ class _GalleryContentListPageState extends State<GalleryContentListPage> {
     }
 
     return ElevatedButton(
-      child: Text("Remove in album"),
+      child: const Text('Remove in album'),
       onPressed: () => deleteAssetInAlbum(entity),
     );
   }
 
-  void deleteAssetInAlbum(entity) {
+  void deleteAssetInAlbum(AssetEntity entity) {
     readPathProvider(context).removeInAlbum(entity);
   }
 
@@ -379,48 +339,42 @@ class _GalleryContentListPageState extends State<GalleryContentListPage> {
       return Container();
     }
     return ElevatedButton(
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (BuildContext context) {
-            return MoveToAnotherExample(entity: entity);
-          }),
-        );
-      },
-      child: Text("Move to another gallery."),
+      onPressed: () => Navigator.push<void>(
+        context,
+        MaterialPageRoute<void>(
+          builder: (_) => MoveToAnotherExample(entity: entity),
+        ),
+      ),
+      child: const Text('Move to another gallery.'),
     );
   }
 
-  showThumb(AssetEntity entity, int size) async {
+  Future<void> showThumb(AssetEntity entity, int size) async {
     final String title;
     if (entity.title?.isEmpty != false) {
       title = await entity.titleAsync;
     } else {
       title = entity.title!;
     }
-    print("entity.title = $title");
-    showDialog(
+    Log.d('entity.title = $title');
+    return showDialog(
       context: context,
       builder: (_) {
         return FutureBuilder<Uint8List?>(
-          future: entity.thumbDataWithOption(
-            ThumbOption.ios(
-              width: 500,
-              height: 500,
-              deliveryMode: DeliveryMode.opportunistic,
-              resizeMode: ResizeMode.fast,
-              resizeContentMode: ResizeContentMode.fit,
+          future: entity.thumbnailDataWithOption(
+            ThumbnailOption.ios(
+              size: const ThumbnailSize.square(500),
               // resizeContentMode: ResizeContentMode.fill,
             ),
           ),
-          builder: (BuildContext context, snapshot) {
+          builder: (BuildContext context, AsyncSnapshot<Uint8List?> snapshot) {
             Widget w;
             if (snapshot.hasError) {
               return ErrorWidget(snapshot.error!);
             } else if (snapshot.hasData) {
-              final data = snapshot.data!;
-              ui.decodeImageFromList(data, (result) {
-                print('result size: ${result.width}x${result.height}');
+              final Uint8List data = snapshot.data!;
+              ui.decodeImageFromList(data, (ui.Image result) {
+                Log.d('result size: ${result.width}x${result.height}');
                 // for 4288x2848
               });
               w = Image.memory(data);
@@ -429,7 +383,7 @@ class _GalleryContentListPageState extends State<GalleryContentListPage> {
                 child: Container(
                   color: Colors.white,
                   padding: const EdgeInsets.all(20),
-                  child: CircularProgressIndicator(),
+                  child: const CircularProgressIndicator(),
                 ),
               );
             }
@@ -444,13 +398,13 @@ class _GalleryContentListPageState extends State<GalleryContentListPage> {
   }
 
   Future<void> testProgressHandler(AssetEntity entity) async {
-    final progressHandler = PMProgressHandler();
-    progressHandler.stream.listen((event) {
-      final progress = event.progress;
-      print('progress state onChange: ${event.state}, progress: $progress');
+    final PMProgressHandler progressHandler = PMProgressHandler();
+    progressHandler.stream.listen((PMProgressState event) {
+      final double progress = event.progress;
+      Log.d('progress state onChange: ${event.state}, progress: $progress');
     });
     // final file = await entity.loadFile(progressHandler: progressHandler);
-    // print('file = $file');
+    // Log.d('file = $file');
 
     // final thumb = await entity.thumbDataWithSize(
     //   300,
@@ -458,30 +412,34 @@ class _GalleryContentListPageState extends State<GalleryContentListPage> {
     //   progressHandler: progressHandler,
     // );
 
-    // print('thumb length = ${thumb.length}');
+    // Log.d('thumb length = ${thumb.length}');
 
-    final file = await entity.loadFile(
+    final File? file = await entity.loadFile(
       progressHandler: progressHandler,
-      isOrigin: true,
     );
-    print('file = $file');
+    Log.d('file = $file');
   }
 
-  testThumbSize(AssetEntity entity, List<int> list) async {
-    for (final size in list) {
+  Future<void> testThumbSize(AssetEntity entity, List<int> list) async {
+    for (final int size in list) {
       // final data = await entity.thumbDataWithOption(ThumbOption.ios(
       //   width: size,
       //   height: size,
       //   resizeMode: ResizeMode.exact,
       // ));
-      final data = await entity.thumbDataWithSize(size, size);
+      final Uint8List? data = await entity.thumbnailDataWithSize(
+        ThumbnailSize.square(size),
+      );
 
       if (data == null) {
         return;
       }
-      ui.decodeImageFromList(data, (result) {
-        print(
-            'size:$size length:${data.length}, size: ${result.width}x${result.height}');
+      ui.decodeImageFromList(data, (ui.Image result) {
+        Log.d(
+          'size: $size, '
+          'length: ${data.length}, '
+          'width*height: ${result.width}x${result.height}',
+        );
       });
     }
   }
