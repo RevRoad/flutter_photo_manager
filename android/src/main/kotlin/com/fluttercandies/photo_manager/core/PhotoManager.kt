@@ -8,7 +8,7 @@ import android.util.Log
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.FutureTarget
 import com.fluttercandies.photo_manager.core.entity.AssetEntity
-import com.fluttercandies.photo_manager.core.entity.FilterOption
+import com.fluttercandies.photo_manager.core.entity.filter.FilterOption
 import com.fluttercandies.photo_manager.core.entity.AssetPathEntity
 import com.fluttercandies.photo_manager.core.entity.ThumbLoadOption
 import com.fluttercandies.photo_manager.core.utils.*
@@ -94,10 +94,9 @@ class PhotoManager(private val context: Context) {
                 resultHandler.replyError("The asset not found!")
                 return
             }
-            val uri = asset.getUri()
             ThumbnailUtil.getThumbnail(
                 context,
-                uri,
+                asset,
                 option.width,
                 option.height,
                 format,
@@ -192,7 +191,7 @@ class PhotoManager(private val context: Context) {
     }
 
     fun assetExists(id: String, resultHandler: ResultHandler) {
-        val exists: Boolean = dbUtils.exists(context, id)
+        val exists: Boolean = dbUtils.assetExists(context, id)
         resultHandler.reply(exists)
     }
 
@@ -206,7 +205,7 @@ class PhotoManager(private val context: Context) {
         }
     }
 
-    fun getMediaUri(id: String, type: Int): String {
+    fun getMediaUri(id: Long, type: Int): String {
         return dbUtils.getMediaUri(context, id, type)
     }
 
@@ -278,5 +277,20 @@ class PhotoManager(private val context: Context) {
         for (futureTarget in needCancelFutures) {
             Glide.with(context).clear(futureTarget)
         }
+    }
+
+    fun getColumnNames(resultHandler: ResultHandler) {
+        val columnNames = dbUtils.getColumnNames(context)
+        resultHandler.reply(columnNames)
+    }
+
+    fun getAssetCount(resultHandler: ResultHandler, option: FilterOption, requestType: Int) {
+        val assetCount = dbUtils.getAssetCount(context, option, requestType)
+        resultHandler.reply(assetCount)
+    }
+
+    fun getAssetsByRange(resultHandler: ResultHandler, option: FilterOption, start: Int, end: Int, requestType: Int) {
+        val list = dbUtils.getAssetsByRange(context, option, start, end, requestType)
+        resultHandler.reply(ConvertUtils.convertAssets(list))
     }
 }

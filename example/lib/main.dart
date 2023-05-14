@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:oktoast/oktoast.dart';
@@ -15,7 +16,12 @@ final PhotoProvider provider = PhotoProvider();
 void main() {
   runZonedGuarded(
     () => runApp(const _SimpleExampleApp()),
-    (Object e, StackTrace s) => showToast('$e\n$s', textAlign: TextAlign.start),
+    (Object e, StackTrace s) {
+      if (kDebugMode) {
+        FlutterError.reportError(FlutterErrorDetails(exception: e, stack: s));
+      }
+      showToast('$e\n$s', textAlign: TextAlign.start);
+    },
   );
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -30,13 +36,20 @@ class _SimpleExampleApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return OKToast(
-      child: ChangeNotifierProvider<PhotoProvider>.value(
-        value: provider, // This is for the advanced usages.
-        child: const MaterialApp(
-          title: 'Photo Manager Example',
-          home: _SimpleExamplePage(),
-        ),
+    return ChangeNotifierProvider<PhotoProvider>.value(
+      value: provider, // This is for the advanced usages.
+      child: MaterialApp(
+        title: 'Photo Manager Example',
+        builder: (context, child) {
+          if (child == null) return const SizedBox.shrink();
+          return Banner(
+            message: 'Debug',
+            location: BannerLocation.bottomStart,
+            child: OKToast(child: child),
+          );
+        },
+        home: const _SimpleExamplePage(),
+        debugShowCheckedModeBanner: false,
       ),
     );
   }
@@ -180,11 +193,14 @@ class _SimpleExamplePageState extends State<_SimpleExamplePage> {
       appBar: AppBar(title: const Text('photo_manager')),
       body: Column(
         children: <Widget>[
-          const Text(
-            'This page will only obtain the first page of assets '
-            'under the primary album (a.k.a. Recent). '
-            'If you want more filtering assets, '
-            'head over to "Advanced usages".',
+          const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Text(
+              'This page will only obtain the first page of assets '
+              'under the primary album (a.k.a. Recent). '
+              'If you want more filtering assets, '
+              'head over to "Advanced usages".',
+            ),
           ),
           Expanded(child: _buildBody(context)),
         ],

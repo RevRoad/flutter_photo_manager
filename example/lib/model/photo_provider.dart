@@ -303,6 +303,10 @@ class AssetPathProvider extends ChangeNotifier {
       path.getAssetListPaged(page: page + 1, size: loadCount),
       prefix: 'Load more assets list from path ${path.id}',
     );
+    if (list.isEmpty) {
+      Log.e('load error');
+      return;
+    }
     page = page + 1;
     this.list.addAll(list);
     notifyListeners();
@@ -334,7 +338,7 @@ class AssetPathProvider extends ChangeNotifier {
   }
 
   Future<void> removeInAlbum(AssetEntity entity) async {
-    if (await PhotoManager.editor.iOS.removeInAlbum(entity, path)) {
+    if (await PhotoManager.editor.darwin.removeInAlbum(entity, path)) {
       final int rangeEnd = this.list.length;
       await provider.refreshAllGalleryProperties();
       final List<AssetEntity> list = await elapsedFuture(

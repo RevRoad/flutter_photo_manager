@@ -4,6 +4,66 @@ that can be found in the LICENSE file. -->
 
 # CHANGELOG
 
+## 2.6.1
+
+### Improvements
+
+- Roll dependencies on Android. (#933)
+
+### Fixes
+
+- Fix filter option group. (#919)
+
+## 2.6.0
+
+### Features:
+
+- Support `CustomFilter` for more filter options. (#901)
+- Add two new static methods for `PhotoManager`:
+  - `getAssetCount` for getting assets count.
+  - `getAssetListRange` for getting assets between start and end.
+  
+## 2.5.2
+
+### Improvements
+
+- Reply errors when thumbnails are failed to load on Android. (#883)
+
+## 2.5.1+1
+
+### Fixes
+
+- Fix pending permissions request on Android. (#879)
+
+## 2.5.1
+
+### Improvements
+
+- Always declare `READ_EXTERNAL_STORAGE` permission on Android. (#874)
+- Upgrade Glide and Kotlin libraries version. (#872)
+- Avoid using file-based saving methods on Android. (#871)
+- Use `ContentUris` for retrieving Media URIs on Android. (#870)
+- Improve media subtype on iOS. (#863)
+
+## 2.5.0
+
+### Features
+
+- Support saving Live Photos on iOS and macOS. (#851)
+- Introduce `DarwinEditor` to replace `IosEditor`. (#855)
+
+## 2.4.2
+
+### Improvements
+
+- Expose `frame` for `AssetEntity.thumbnailDataWithSize`. (#850)
+
+## 2.4.1
+
+### Improvements
+
+- Use last modified date for Glide caches key on Android. (#848)
+
 ## 2.4.0
 
 ### Features
@@ -467,7 +527,7 @@ and applied multiple ### Fixes which make this plugin as the most solid ever.
   but at the same time user have to bear the risks corresponding to the permission).
 - Support clean file cache.
 - Experimental
-    - Preload image (Use `PhotoCachingManager` api.)
+  - Preload image (Use `PhotoCachingManager` api.)
 - Add `OrderOption` as sort condition. The option default value is order by create date desc;
 - Support icloud asset progress.
 
@@ -530,14 +590,14 @@ and applied multiple ### Fixes which make this plugin as the most solid ever.
 - Create AssetEntity with id.
 - Create AssetPathEntity from id.
 - Only iOS
-    - Create folder or album.
-    - Remove assets in album.
-    - Delete folder or album.
-    - Favorite asset.
+  - Create folder or album.
+  - Remove assets in album.
+  - Delete folder or album.
+  - Favorite asset.
 - Only android
-    - move asset to another path.
-    - Remove all non-existing rows.
-    - add `relativePath` for android.
+  - move asset to another path.
+  - Remove all non-existing rows.
+  - add `relativePath` for android.
 
 ### Improvements
 
@@ -559,6 +619,7 @@ and applied multiple ### Fixes which make this plugin as the most solid ever.
 ## 0.5.0
 
 ### Breaking changes
+
 - Add date condition to filter datetime
 - Add class `DateTimeCond`
 - Add `dateTimeCond` to `FilterOptionGroup`

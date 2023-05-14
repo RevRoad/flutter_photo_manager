@@ -8,7 +8,8 @@ import 'dart:typed_data' as typed_data;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 
-import '../filter/filter_option_group.dart';
+import '../filter/base_filter.dart';
+import '../filter/classical/filter_option_group.dart';
 import '../internal/constants.dart';
 import '../internal/editor.dart';
 import '../internal/enums.dart';
@@ -32,7 +33,7 @@ class AssetPathEntity {
     this.lastModified,
     this.type = RequestType.common,
     this.isAll = false,
-    FilterOptionGroup? filterOption,
+    PMFilter? filterOption,
   }) : filterOption = filterOption ??= FilterOptionGroup();
 
   /// Obtain an entity from ID.
@@ -99,29 +100,32 @@ class AssetPathEntity {
   final bool isAll;
 
   /// The collection of filter options of the album.
-  final FilterOptionGroup filterOption;
+  final PMFilter filterOption;
 
   /// Call this method to obtain new path entity.
   static Future<AssetPathEntity> obtainPathFromProperties({
     required String id,
     int albumType = 1,
     RequestType type = RequestType.common,
-    FilterOptionGroup? optionGroup,
+    PMFilter? optionGroup,
     bool maxDateTimeToNow = true,
   }) async {
     optionGroup ??= FilterOptionGroup();
     final StateError error = StateError(
       'Unable to fetch properties for path $id.',
     );
+
     if (maxDateTimeToNow) {
-      optionGroup = optionGroup.copyWith(
-        createTimeCond: optionGroup.createTimeCond.copyWith(
-          max: DateTime.now(),
-        ),
-        updateTimeCond: optionGroup.updateTimeCond.copyWith(
-          max: DateTime.now(),
-        ),
-      );
+      if (optionGroup is FilterOptionGroup) {
+        optionGroup = optionGroup.copyWith(
+          createTimeCond: optionGroup.createTimeCond.copyWith(
+            max: DateTime.now(),
+          ),
+          updateTimeCond: optionGroup.updateTimeCond.copyWith(
+            max: DateTime.now(),
+          ),
+        );
+      }
     } else {
       optionGroup = optionGroup;
     }
@@ -167,11 +171,16 @@ class AssetPathEntity {
   }) {
     assert(albumType == 1, 'Only album can request for assets.');
     assert(size > 0, 'Page size must be greater than 0.');
-    assert(
-      type == RequestType.image || !filterOption.onlyLivePhotos,
-      'Filtering only Live Photos is only supported '
-      'when the request type contains image.',
-    );
+
+    final filterOption = this.filterOption;
+
+    if (filterOption is FilterOptionGroup) {
+      assert(
+        type == RequestType.image || !filterOption.onlyLivePhotos,
+        'Filtering only Live Photos is only supported '
+        'when the request type contains image.',
+      );
+    }
     return plugin.getAssetListPaged(
       id,
       page: page,
@@ -193,11 +202,15 @@ class AssetPathEntity {
     assert(albumType == 1, 'Only album can request for assets.');
     assert(start >= 0, 'The start must be greater than 0.');
     assert(end > start, 'The end must be greater than start.');
-    assert(
-      type == RequestType.image || !filterOption.onlyLivePhotos,
-      'Filtering only Live Photos is only supported '
-      'when the request type contains image.',
-    );
+    final filterOption = this.filterOption;
+
+    if (filterOption is FilterOptionGroup) {
+      assert(
+        type == RequestType.image || !filterOption.onlyLivePhotos,
+        'Filtering only Live Photos is only supported '
+        'when the request type contains image.',
+      );
+    }
     final int count = await assetCountAsync;
     if (end > count) {
       end = count;
@@ -252,7 +265,7 @@ class AssetPathEntity {
     DateTime? lastModified,
     RequestType? type,
     bool? isAll,
-    FilterOptionGroup? filterOption,
+    PMFilter? filterOption,
   }) {
     return AssetPathEntity(
       id: id ?? this.id,
@@ -378,7 +391,7 @@ class AssetEntity {
   final int subtype;
 
   /// Whether the asset is a live photo. Only valid on iOS/macOS.
-  bool get isLivePhoto => subtype == 8;
+  bool get isLivePhoto => subtype & _livePhotosType == _livePhotosType;
 
   /// The type value of the [type].
   final int typeInt;
@@ -550,6 +563,7 @@ class AssetEntity {
     PMProgressHandler? progressHandler,
     bool exactSize = false,
     bool download = false,
+    int frame = 0,
   }) {
     assert(() {
       _checkThumbnailAssertion();
@@ -574,6 +588,7 @@ class AssetEntity {
         format: format,
         quality: quality,
         exactSize: exactSize,
+        frame: frame,
       );
     }
     assert(() {
@@ -807,12 +822,16 @@ class AssetEntity {
   String toString() => 'AssetEntity(id: $id , type: $type)';
 }
 
-/// Longitude and latitude.
+/// Represents a geographical location as a latitude-longitude pair.
 @immutable
 class LatLng {
+  /// Creates a new [LatLng] object with the given latitude and longitude.
   const LatLng({this.latitude, this.longitude});
 
+  /// The latitude of this location in degrees.
   final double? latitude;
+
+  /// The longitude of this location in degrees.
   final double? longitude;
 
   @override
@@ -826,3 +845,6 @@ class LatLng {
   @override
   int get hashCode => latitude.hashCode ^ longitude.hashCode;
 }
+
+/// The subtype value for Live Photos.
+const int _livePhotosType = 1 << 3;

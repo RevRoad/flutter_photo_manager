@@ -35,6 +35,7 @@ class PMConstants {
   static const String mSaveImage = 'saveImage';
   static const String mSaveImageWithPath = 'saveImageWithPath';
   static const String mSaveVideo = 'saveVideo';
+  static const String mSaveLivePhoto = 'saveLivePhoto';
   static const String mAssetExists = 'assetExists';
   static const String mSystemVersion = 'systemVersion';
   static const String mGetLatLngAndroidQ = 'getLatLngAndroidQ';
@@ -55,6 +56,10 @@ class PMConstants {
   static const String mCreateFolder = 'createFolder';
   static const String mRemoveInAlbum = 'removeInAlbum';
   static const String mMoveAssetToPath = 'moveAssetToPath';
+  static const String mColumnNames = 'getColumnNames';
+
+  static const String mGetAssetCount = 'getAssetCount';
+  static const String mGetAssetsByRange = 'getAssetsByRange';
 
   /// Constant value.
   static const int vDefaultThumbnailSize = 150;
