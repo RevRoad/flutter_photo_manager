@@ -102,6 +102,13 @@
                             hasAll:hasAll
                   containsModified:option.containsModified];
 
+    PHFetchResult<PHCollection *> *topLevelResult = [PHAssetCollection fetchTopLevelUserCollectionsWithOptions:fetchCollectionOptions];
+    [self injectAssetPathIntoArray:array
+                            result:topLevelResult
+                           options:assetOptions
+                            hasAll:hasAll
+                  containsModified:option.containsModified];
+
     return array;
 }
 
@@ -200,11 +207,11 @@
                           hasAll:(BOOL)hasAll
                 containsModified:(BOOL)containsModified {
     for (id collection in result) {
-//        NSLog(@"collection: %@", collection);
+        // NSLog(@"collection: %@", collection);
         // we are not currently getting folders. we used to be calling PHFetchResult<PHCollection *> *topLevelResult = [PHAssetCollection fetchTopLevelUserCollectionsWithOptions:fetchCollectionOptions]; 
         if ([collection isMemberOfClass:[PHCollectionList class]]) {
-            PHCollectionList *list = (PHCollectionList *)collection;
-//            NSLog(@"list: %@, %d, %d", list.localizedTitle, list.collectionListType, list.collectionListSubtype);
+            // PHCollectionList *list = (PHCollectionList *)collection;
+            // NSLog(@"list: %@, %d, %d", list.localizedTitle, list.collectionListType, list.collectionListSubtype);
             // Moments, Years, or folders
             [array addObject:[self convertPHCollectionToPMPath:collection option:options]];
             continue;
