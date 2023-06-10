@@ -562,7 +562,6 @@ class AssetEntity {
     int quality = 100,
     PMProgressHandler? progressHandler,
     bool exactSize = false,
-    bool download = false,
     int frame = 0,
   }) {
     assert(() {
@@ -580,7 +579,6 @@ class AssetEntity {
         format: format,
         quality: quality,
         exactSize: exactSize,
-        download: download,
       );
     } else {
       option = ThumbnailOption(

@@ -208,7 +208,7 @@
                 containsModified:(BOOL)containsModified {
     for (id collection in result) {
         // NSLog(@"collection: %@", collection);
-        // we are not currently getting folders. we used to be calling PHFetchResult<PHCollection *> *topLevelResult = [PHAssetCollection fetchTopLevelUserCollectionsWithOptions:fetchCollectionOptions]; 
+        // we are not currently getting folders. we used to be calling PHFetchResult<PHCollection *> *topLevelResult = [PHAssetCollection fetchTopLevelUserCollectionsWithOptions:fetchCollectionOptions];
         if ([collection isMemberOfClass:[PHCollectionList class]]) {
             // PHCollectionList *list = (PHCollectionList *)collection;
             // NSLog(@"list: %@, %d, %d", list.localizedTitle, list.collectionListType, list.collectionListSubtype);
@@ -216,7 +216,7 @@
             [array addObject:[self convertPHCollectionToPMPath:collection option:options]];
             continue;
         }
-        
+
         if (![collection isKindOfClass:[PHAssetCollection class]]) {
             continue;
         }
@@ -445,7 +445,6 @@
     PHImageManager *manager = PHImageManager.defaultManager;
     PHImageRequestOptions *requestOptions = [PHImageRequestOptions new];
     bool exactSize = option.exactSize;
-    bool download = option.download;
     if (exactSize) {
         requestOptions.deliveryMode = PHImageRequestOptionsDeliveryModeHighQualityFormat;
         requestOptions.resizeMode = PHImageRequestOptionsResizeModeExact;
@@ -457,11 +456,10 @@
     requestOptions.version = PHImageRequestOptionsVersionCurrent;
 
     [self notifyProgress:progressHandler progress:0 state:PMProgressStatePrepare];
-    
-    [requestOptions setNetworkAccessAllowed:download];
+
+    [requestOptions setNetworkAccessAllowed:YES];
     [requestOptions setProgressHandler:^(double progress, NSError *error, BOOL *stop,
                                          NSDictionary *info) {
-
         if (error) {
             [self notifyProgress:progressHandler progress:progress state:PMProgressStateFailed];
             [progressHandler deinit];
@@ -474,69 +472,50 @@
     int width = option.width;
     int height = option.height;
 
-    void (^returnImageData)(PMImage *) = ^(PMImage *image) {
+    [manager requestImageForAsset:asset
+                       targetSize:CGSizeMake(width, height)
+                      contentMode:option.contentMode
+                          options:requestOptions
+                    resultHandler:^(PMImage *result, NSDictionary *info) {
+        NSError *error = info[PHImageErrorKey];
+        if (error) {
+            [self returnError:error resultHandler:handler];
+            return;
+        }
+
+        BOOL downloadFinished = [PMManager isDownloadFinish:info];
+
+        if (!downloadFinished) {
+            return;
+        }
+
         if ([handler isReplied]) {
             return;
         }
-        if (exactSize && (image.size.width != width || image.size.height != height)) {
-            NSUInteger minSide = MIN(image.size.width, image.size.height);
+
+        if (exactSize && (result.size.width != width || result.size.height != height)) {
+            NSUInteger minSide = MIN(result.size.width, result.size.height);
             NSUInteger cropWidth = MIN(minSide, width);
             NSUInteger cropHeight = MIN(minSide, height);
-            CGRect cropRect = CGRectMake((int)(image.size.width - cropWidth) / 2,
-                                        (int)(image.size.height - cropHeight) / 2,
-                                        cropWidth, cropHeight);
+            CGRect cropRect = CGRectMake((int)(result.size.width - cropWidth) / 2,
+                                         (int)(result.size.height - cropHeight) / 2,
+                                         cropWidth, cropHeight);
             // NSLog(@"Wanting exact size and Apple didn't give us the right size. image.size: %@. desired width: %ld height: %ld. cropWidth: %ld, cropHeight: %ld. Attempting to crop with rect: %@. image before: %@", NSStringFromCGSize(image.size), width, height, cropWidth, cropHeight, NSStringFromCGRect(cropRect), image);
-            image = [image crop:cropRect];
+            result = [result crop:cropRect];
         }
-        NSData *imageData = [PMImageUtil convertToData:image formatType:option.format quality:option.quality];
+
+        NSData *imageData = [PMImageUtil convertToData:result formatType:option.format quality:option.quality];
         if (imageData) {
             id data = [self.converter convertData:imageData];
             [handler reply:data];
         } else {
             [handler reply: nil];
         }
-    };
 
-    [manager requestImageForAsset:asset
-                       targetSize:CGSizeMake(width, height)
-                      contentMode:option.contentMode
-                          options:requestOptions
-                  resultHandler:^(PMImage *result, NSDictionary *info) {
-        NSError *error = info[PHImageErrorKey];
-        if (error) {
-            if (!download && [info[PHImageResultIsInCloudKey] isEqualToNumber:@1]) {
-                // image is stored in iCloud and we are not downloading the original
-                // request the highest quality available on disk, which seems to be 256
-                // https://openradar.appspot.com/25181601
-                // but maybe we should try a few different sizes
-                PHImageRequestOptions *options = [PHImageRequestOptions new];
-                options.deliveryMode = PHImageRequestOptionsDeliveryModeHighQualityFormat;
-                [manager requestImageForAsset:asset
-                                    targetSize:CGSizeMake(256, 256)
-                                    contentMode:PHImageContentModeAspectFill
-                                        options:options
-                                resultHandler:^(UIImage *result, NSDictionary *info) {
-                    if (result) {
-                        returnImageData(result);
-                    }
-                    else {
-                        [self returnError:info[PHImageErrorKey] ? info[PHImageErrorKey] : error resultHandler:handler];
-                    }
-                }];
-            }
-            else {
-                [self returnError:error resultHandler:handler];
-            }
-        }
-        else {
-            BOOL downloadFinished = [PMManager isDownloadFinish:info];
-            if (!downloadFinished) {
-                return;
-            }
-            returnImageData(result);
-            [self notifySuccess:progressHandler];
-        }
+        [self notifySuccess:progressHandler];
+
     }];
+
 }
 
 - (void)getFullSizeFileWithId:(NSString *)id isOrigin:(BOOL)isOrigin subtype:(int)subtype resultHandler:(NSObject <PMResultHandler> *)handler progressHandler:(NSObject <PMProgressHandlerProtocol> *)progressHandler {
@@ -903,9 +882,9 @@
         if ([handler isReplied]) {
             return;
         }
-        
+
         NSData *data = [PMImageUtil convertToData:image formatType:PMThumbFormatTypeJPEG quality:0.95];
-        
+
         if (data) {
             NSString *path = [self writeFullFileWithAssetId:asset imageData: data];
             [handler reply:path];

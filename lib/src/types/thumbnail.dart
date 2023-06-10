@@ -67,7 +67,6 @@ class ThumbnailOption {
     ResizeMode resizeMode = ResizeMode.fast,
     ResizeContentMode resizeContentMode = ResizeContentMode.fit,
     bool exactSize = false,
-    bool download = false,
   }) {
     return _IOSThumbnailOption(
       size: size,
@@ -77,7 +76,6 @@ class ThumbnailOption {
       resizeMode: resizeMode,
       resizeContentMode: resizeContentMode,
       exactSize: exactSize,
-      download: download,
     );
   }
 
@@ -155,7 +153,6 @@ class _IOSThumbnailOption extends ThumbnailOption {
     required this.resizeMode,
     required this.resizeContentMode,
     bool exactSize = false,
-    this.download = false,
   }) : super(size: size, format: format, quality: quality, exactSize: exactSize);
 
   /// The delivery mode for the thumbnail.
@@ -166,7 +163,6 @@ class _IOSThumbnailOption extends ThumbnailOption {
 
   /// The resize content mode for the thumbnail.
   final ResizeContentMode resizeContentMode;
-  final bool download;
 
   @override
   Map<String, dynamic> toMap() {

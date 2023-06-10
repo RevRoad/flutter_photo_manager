@@ -15,7 +15,6 @@ typedef enum PMThumbFormatType {
 @property(nonatomic, assign) bool exactSize;
 
 #pragma mark only iOS
-@property(nonatomic, assign) bool download;
 @property(nonatomic, assign) PHImageContentMode contentMode;
 @property(nonatomic, assign) PHImageRequestOptionsDeliveryMode deliveryMode;
 @property(nonatomic, assign) PHImageRequestOptionsResizeMode resizeMode;
