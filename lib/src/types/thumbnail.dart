@@ -114,6 +114,7 @@ class ThumbnailOption {
       'format': format.index,
       'quality': quality,
       'frame': frame,
+      'exactSize': exactSize,
     };
   }
 
