@@ -91,16 +91,16 @@
                             hasAll:hasAll
                   containsModified:option.containsModified];
 
-    PHFetchResult<PHAssetCollection *> *albumResult = [PHAssetCollection
-                                                       fetchAssetCollectionsWithType:PHAssetCollectionTypeAlbum
-                                                       subtype:PHAssetCollectionSubtypeAny
-                                                       options:fetchCollectionOptions];
-    [self logCollections:albumResult option:assetOptions];
-    [self injectAssetPathIntoArray:array
-                            result:albumResult
-                           options:assetOptions
-                            hasAll:hasAll
-                  containsModified:option.containsModified];
+//    PHFetchResult<PHAssetCollection *> *albumResult = [PHAssetCollection
+//                                                       fetchAssetCollectionsWithType:PHAssetCollectionTypeAlbum
+//                                                       subtype:PHAssetCollectionSubtypeAny
+//                                                       options:fetchCollectionOptions];
+//    [self logCollections:albumResult option:assetOptions];
+//    [self injectAssetPathIntoArray:array
+//                            result:albumResult
+//                           options:assetOptions
+//                            hasAll:hasAll
+//                  containsModified:option.containsModified];
 
     PHFetchResult<PHCollection *> *topLevelResult = [PHAssetCollection fetchTopLevelUserCollectionsWithOptions:fetchCollectionOptions];
     [self injectAssetPathIntoArray:array
