@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:photo_manager/photo_manager.dart';
 import 'package:provider/provider.dart';
 
 import '../model/photo_provider.dart';
 import '../widget/dialog/duration_picker.dart';
 
 class FilterOptionPage extends StatefulWidget {
-  const FilterOptionPage({Key? key}) : super(key: key);
+  const FilterOptionPage({super.key});
 
   @override
   State<FilterOptionPage> createState() => _FilterOptionPageState();
@@ -196,5 +197,70 @@ class _FilterOptionPageState extends State<FilterOptionPage> {
         provider.asc = value;
       },
     );
+  }
+}
+
+class DarwinPathFilterPage extends StatefulWidget {
+  const DarwinPathFilterPage({super.key});
+
+  @override
+  State<DarwinPathFilterPage> createState() => _DarwinPathFilterPageState();
+}
+
+class _DarwinPathFilterPageState extends State<DarwinPathFilterPage> {
+  Widget buildGroup<T>(
+    String title,
+    List<T> allValues,
+    List<T> checkedValues,
+    void Function(List<T> value) onChanged,
+  ) {
+    final List<T> currentValues = checkedValues.toList();
+    return ExpansionTile(
+      title: Text(title),
+      children: allValues.map((T value) {
+        return CheckboxListTile(
+          title: Text(value.toString().split('.')[1]),
+          value: currentValues.contains(value),
+          onChanged: (bool? checked) {
+            if (checked == true) {
+              currentValues.add(value);
+            } else {
+              currentValues.remove(value);
+            }
+            onChanged(currentValues);
+          },
+        );
+      }).toList(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final PhotoProvider provider = context.watch<PhotoProvider>();
+
+    return Scaffold(
+        appBar: AppBar(
+          title: const Text('Path filter'),
+        ),
+        body: ListView(
+          children: <Widget>[
+            buildGroup<PMDarwinAssetCollectionType>(
+              'PMDarwinAssetCollectionType',
+              PMDarwinAssetCollectionType.values,
+              provider.pathTypeList,
+              (value) {
+                provider.pathTypeList = value;
+              },
+            ),
+            buildGroup<PMDarwinAssetCollectionSubtype>(
+              'PMDarwinAssetCollectionSubtype',
+              PMDarwinAssetCollectionSubtype.values,
+              provider.pathSubTypeList,
+              (value) {
+                provider.pathSubTypeList = value;
+              },
+            ),
+          ],
+        ));
   }
 }

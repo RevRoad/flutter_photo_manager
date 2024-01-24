@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:photo_manager_image_provider/photo_manager_image_provider.dart';
 
 import '../util/common_util.dart';
 import '../widget/live_photos_widget.dart';
 import '../widget/video_widget.dart';
 
 class DetailPage extends StatefulWidget {
-  const DetailPage({Key? key, required this.entity}) : super(key: key);
+  const DetailPage({super.key, required this.entity});
 
   final AssetEntity entity;
 

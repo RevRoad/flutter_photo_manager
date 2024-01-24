@@ -5,21 +5,13 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import '../filter/path_filter.dart';
 import '../types/entity.dart';
 import 'plugin.dart';
 
 class Editor {
-  final IosEditor _ios = const IosEditor();
   final DarwinEditor _darwin = const DarwinEditor();
   final AndroidEditor _android = const AndroidEditor();
-
-  @Deprecated('Use `Editor.darwin` instead. This will be removed in 3.0.0')
-  IosEditor get iOS {
-    if (Platform.isIOS || Platform.isMacOS) {
-      return _ios;
-    }
-    throw const OSError('iOS Editor should only be use on iOS.');
-  }
 
   /// Support iOS and macOS.
   DarwinEditor get darwin {
@@ -211,6 +203,10 @@ class DarwinEditor {
     if (list.isEmpty) {
       return false;
     }
+    if (parent.darwinType == PMDarwinAssetCollectionType.smartAlbum) {
+      // Asset of smartAlbums can't be deleted.
+      return false;
+    }
     _ensureParentIsNotRootOrFolder(parent);
     return plugin.iosRemoveInAlbum(list, parent);
   }
@@ -218,7 +214,11 @@ class DarwinEditor {
   /// Deletes the given [path].
   ///
   /// Returns `true` if the operation was successful; otherwise, `false`.
-  Future<bool> deletePath(AssetPathEntity path) {
+  Future<bool> deletePath(AssetPathEntity path) async {
+    if (path.darwinType == PMDarwinAssetCollectionType.smartAlbum) {
+      // SmartAlbums can't be deleted.
+      return false;
+    }
     return plugin.iosDeleteCollection(path);
   }
 
@@ -260,12 +260,6 @@ class DarwinEditor {
   }
 }
 
-/// An editor for iOS/macOS.
-class IosEditor extends DarwinEditor {
-  /// Creates a new [IosEditor] object.
-  const IosEditor();
-}
-
 /// An editor for Android.
 class AndroidEditor {
   /// Creates a new [AndroidEditor] object.
@@ -287,5 +281,10 @@ class AndroidEditor {
   /// device's storage. It returns `true` if this operation was successful; otherwise, `false`.
   Future<bool> removeAllNoExistsAsset() {
     return plugin.androidRemoveNoExistsAssets();
+  }
+
+  /// Move to trash
+  Future<List<String>> moveToTrash(List<AssetEntity> list) {
+    return plugin.moveToTrash(list);
   }
 }

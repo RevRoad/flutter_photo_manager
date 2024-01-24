@@ -8,10 +8,13 @@ import android.util.Log
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.FutureTarget
 import com.fluttercandies.photo_manager.core.entity.AssetEntity
-import com.fluttercandies.photo_manager.core.entity.filter.FilterOption
 import com.fluttercandies.photo_manager.core.entity.AssetPathEntity
 import com.fluttercandies.photo_manager.core.entity.ThumbLoadOption
-import com.fluttercandies.photo_manager.core.utils.*
+import com.fluttercandies.photo_manager.core.entity.filter.FilterOption
+import com.fluttercandies.photo_manager.core.utils.AndroidQDBUtils
+import com.fluttercandies.photo_manager.core.utils.ConvertUtils
+import com.fluttercandies.photo_manager.core.utils.DBUtils
+import com.fluttercandies.photo_manager.core.utils.IDBUtils
 import com.fluttercandies.photo_manager.thumb.ThumbnailUtil
 import com.fluttercandies.photo_manager.util.LogUtils
 import com.fluttercandies.photo_manager.util.ResultHandler
@@ -103,7 +106,7 @@ class PhotoManager(private val context: Context) {
                 quality,
                 frame,
                 exactSize,
-                resultHandler.result
+                resultHandler,
             )
         } catch (e: Exception) {
             Log.e(LogUtils.TAG, "get $id thumbnail error, width : $width, height: $height", e)
@@ -266,7 +269,12 @@ class PhotoManager(private val context: Context) {
                 if (cacheFuture.isCancelled) {
                     return@execute
                 }
-                cacheFuture.get()
+
+                try {
+                    cacheFuture.get()
+                } catch (e: Exception) {
+                    LogUtils.error(e)
+                }
             }
         }
     }
@@ -289,7 +297,23 @@ class PhotoManager(private val context: Context) {
         resultHandler.reply(assetCount)
     }
 
-    fun getAssetsByRange(resultHandler: ResultHandler, option: FilterOption, start: Int, end: Int, requestType: Int) {
+    fun getAssetCount(
+        resultHandler: ResultHandler,
+        option: FilterOption,
+        requestType: Int,
+        galleryId: String,
+    ) {
+        val assetCount = dbUtils.getAssetCount(context, option, requestType, galleryId)
+        resultHandler.reply(assetCount)
+    }
+
+    fun getAssetsByRange(
+        resultHandler: ResultHandler,
+        option: FilterOption,
+        start: Int,
+        end: Int,
+        requestType: Int
+    ) {
         val list = dbUtils.getAssetsByRange(context, option, start, end, requestType)
         resultHandler.reply(ConvertUtils.convertAssets(list))
     }

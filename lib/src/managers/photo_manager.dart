@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../filter/base_filter.dart';
+import '../filter/path_filter.dart';
 import '../internal/editor.dart';
 import '../internal/enums.dart';
 import '../internal/plugin.dart' as base;
@@ -67,7 +68,10 @@ class PhotoManager {
   /// See the documents from Apple:
   ///  * iOS 14: https://developer.apple.com/documentation/photokit/phphotolibrary/3616113-presentlimitedlibrarypickerfromv/
   ///  * iOS 15: https://developer.apple.com/documentation/photokit/phphotolibrary/3752108-presentlimitedlibrarypickerfromv/
-  static Future<void> presentLimited() => plugin.presentLimited();
+  static Future<void> presentLimited({
+    RequestType type = RequestType.all,
+  }) =>
+      plugin.presentLimited(type);
 
   /// Obtain albums/folders list with couple filter options.
   ///
@@ -84,12 +88,14 @@ class PhotoManager {
     bool onlyAll = false,
     RequestType type = RequestType.common,
     PMFilter? filterOption,
+    PMPathFilter pathFilterOption = const PMPathFilter(),
   }) async {
     return plugin.getAssetPathList(
       hasAll: hasAll,
       onlyAll: onlyAll,
       type: type,
       filterOption: filterOption,
+      pathFilterOption: pathFilterOption,
     );
   }
 

@@ -23,10 +23,10 @@ Future<void> changeOrderBy(
 
 class OrderByAction extends StatelessWidget {
   const OrderByAction({
-    Key? key,
+    super.key,
     required this.items,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   final List<OrderByItem> items;
   final ValueChanged<List<OrderByItem>> onChanged;
@@ -72,9 +72,9 @@ class OrderByAction extends StatelessWidget {
 
 class OrderByActionPage extends StatefulWidget {
   const OrderByActionPage({
-    Key? key,
+    super.key,
     required this.items,
-  }) : super(key: key);
+  });
 
   final List<OrderByItem> items;
 
@@ -93,9 +93,12 @@ class _OrderByActionPageState extends State<OrderByActionPage> {
     _items.addAll(widget.items);
   }
 
-  Future<bool> sureBack() {
+  void sureBack(bool didPop) {
+    if (didPop) {
+      return;
+    }
     if (isEdit) {
-      return showDialog(
+      showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Are you sure?'),
@@ -103,13 +106,14 @@ class _OrderByActionPageState extends State<OrderByActionPage> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(false);
+                Navigator.of(context).pop();
               },
               child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(true);
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
               },
               child: const Text('Sure'),
             ),
@@ -117,14 +121,15 @@ class _OrderByActionPageState extends State<OrderByActionPage> {
         ),
       ).then((value) => value == true);
     } else {
-      return Future.value(true);
+      Navigator.of(context).pop();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: sureBack,
+    return PopScope(
+      canPop: false,
+      onPopInvoked: sureBack,
       child: _buildBody(context),
     );
   }

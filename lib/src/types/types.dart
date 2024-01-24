@@ -5,6 +5,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../internal/enums.dart';
+import '../internal/map_interface.dart';
 
 /// The request type when requesting paths.
 ///
@@ -59,6 +60,18 @@ class RequestType {
     return RequestType(value << bit);
   }
 
+  /// The values of [RequestType].
+  static const values = <RequestType>[image, video, audio];
+
+  /// Computes the request type from given types.
+  static RequestType fromTypes(List<RequestType> types) {
+    RequestType result = const RequestType(0);
+    for (final type in types) {
+      result += type;
+    }
+    return result;
+  }
+
   @override
   bool operator ==(Object other) =>
       other is RequestType && value == other.value;
@@ -70,22 +83,27 @@ class RequestType {
   String toString() => '$runtimeType($value)';
 }
 
-@Deprecated(
-  'Use PermissionRequestOption instead. This will be removed in 3.0.0',
-)
-typedef PermisstionRequestOption = PermissionRequestOption;
-
 /// See [PermissionState].
 @immutable
-class PermissionRequestOption {
+class PermissionRequestOption with IMapMixin {
   const PermissionRequestOption({
     this.iosAccessLevel = IosAccessLevel.readWrite,
+    this.androidPermission = const AndroidPermission(
+      type: RequestType.common,
+      mediaLocation: false,
+    ),
   });
 
+  /// See [IosAccessLevel].
   final IosAccessLevel iosAccessLevel;
 
+  /// See [AndroidPermission].
+  final AndroidPermission androidPermission;
+
+  @override
   Map<String, dynamic> toMap() => <String, dynamic>{
         'iosAccessLevel': iosAccessLevel.index + 1,
+        'androidPermission': androidPermission.toMap(),
       };
 
   @override
@@ -95,4 +113,32 @@ class PermissionRequestOption {
 
   @override
   int get hashCode => iosAccessLevel.hashCode;
+}
+
+/// The permission for android.
+class AndroidPermission with IMapMixin {
+  /// The type of your need.
+  ///
+  /// See [RequestType].
+  final RequestType type;
+
+  /// Whether you need to access the media location.
+  /// You must define `<uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />` in your AndroidManifest.xml.
+  ///
+  /// If you do not define in AndroidManifest, or [mediaLocation] is false, this permission will not be applied for.
+  ///
+  /// See it in [android](https://developer.android.com/reference/android/Manifest.permission#ACCESS_MEDIA_LOCATION).
+  final bool mediaLocation;
+
+  /// The permission for android.
+  const AndroidPermission({
+    required this.type,
+    required this.mediaLocation,
+  });
+
+  @override
+  Map<String, dynamic> toMap() => <String, dynamic>{
+        'type': type.value,
+        'mediaLocation': mediaLocation,
+      };
 }

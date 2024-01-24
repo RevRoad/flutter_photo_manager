@@ -96,6 +96,10 @@ extension LogicalTypeExtension on LogicalType {
 }
 
 /// {@template PM.column_where_condition}
+/// 
+/// The where condition item for custom filter.
+/// 
+/// {@endtemplate}
 abstract class WhereConditionItem {
   /// The text of the condition.
   String get text;
@@ -431,7 +435,7 @@ class DateColumnWhereCondition extends WhereConditionItem {
 ///
 /// If you are an advanced user and insist on using it,
 /// please understand the following:
-/// - Android: How to write where with `ContentReslover`.
+/// - Android: How to write where with `ContentResolver`.
 /// - iOS/macOS: How to format `NSPredicate`.
 ///
 /// {@endtemplate}

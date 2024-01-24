@@ -4,7 +4,81 @@ that can be found in the LICENSE file. -->
 
 # CHANGELOG
 
-## 2.6.1
+To know more about breaking changes, see the [Migration Guide][].
+
+## 3.0.0-dev.5
+
+### Fixes
+
+- Fix `requestPermissionExtend` returns the incorrect status on Android API 34.
+
+## 3.0.0-dev.4
+
+### Fixes
+
+- Fix `presentLimit` did not finish on Android. (#1052)
+
+## 3.0.0-dev.3
+
+### Fixes
+
+- Dispatch channel calls in main thread on Darwin.
+
+## 3.0.0-dev.2
+
+### Fixes
+
+- Fix `PhotoManager.editor.deleteWithIds` method not working on Android API 29.
+
+## 3.0.0-dev.1
+
+### Breaking changes
+
+See the [Migration Guide][] for details of breaking changes.
+
+## 2.8.1
+
+### Feature
+
+Fix:
+
+- Upgrade android/build.gradle to load current java version from some environment variables.
+- Fix the `setIgnorePermissionCheck` method not working on Android.
+
+## 2.8.0
+
+### Breaking changes
+
+See the [Migration Guide][] for details of breaking changes.
+
+### Features
+
+- Support Android 14 limited access to assets.
+
+### Fixes
+
+- Correct the key when fetching video info with MMR on Android. (#997)
+- Retrieve original media instead of one with adjustments/filters for subtype files on iOS. (#976)
+- Returns original file name instead of `FullSizeRender.*` if this has adjustments on iOS. (#976)
+
+### Improvements
+
+- Add locks to the image provider.
+
+## 2.7.1
+
+### Fixes
+
+- Fix namespace on Android.
+- Remove the package definition from the manifest.
+- Use `math.pow(2^63)-1` to make Web compile work again.
+- Fix the `end` argument of `PhotoManager.getAssetListRange` is being handled incorrectly on Darwin. (#962)
+
+## 2.7.0
+
+### Features
+
+- Support `darwinType` and `darwinSubType` in `AssetPathEntity` on iOS and macOS. (#950)
 
 ### Improvements
 
@@ -13,16 +87,21 @@ that can be found in the LICENSE file. -->
 ### Fixes
 
 - Fix filter option group. (#919)
+- Fix `originFileWithSubtype` and `fileWithSubtype` for livePhoto.
+- Fix: support only add permission for iOS/macOS. (#944)
+- Fix: modified the output path for iOS(add id in next path).
+- Fix: Fixed a possible problem with the permission for darwin.
+- Fix: `needTitle` for `CustomFilter`.
 
 ## 2.6.0
 
-### Features:
+### Features
 
 - Support `CustomFilter` for more filter options. (#901)
 - Add two new static methods for `PhotoManager`:
   - `getAssetCount` for getting assets count.
   - `getAssetListRange` for getting assets between start and end.
-  
+
 ## 2.5.2
 
 ### Improvements
@@ -238,7 +317,10 @@ that can be found in the LICENSE file. -->
 
 A major version release for performance improvements, new features, issues fixed, and breaking changes.
 Also, the LICENSE has been updated with the new author [FlutterCandies](https://github.com/fluttercandies).
-To know more about breaking changes, see the [Migration Guide][].
+
+### Breaking changes
+
+See the [Migration Guide][] for details of breaking changes.
 
 ### Features
 

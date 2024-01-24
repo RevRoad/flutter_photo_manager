@@ -17,7 +17,7 @@ class PMConstants {
   static const String mFetchEntityProperties = 'fetchEntityProperties';
   static const String mGetAssetCountFromPath = 'getAssetCountFromPath';
 
-  /// The 4 methods have [RequestType] params, for android-13
+  /// These methods have [RequestType] params for Android 13+ (33+).
   static const String mFetchPathProperties = 'fetchPathProperties';
   static const String mGetAssetPathList = 'getAssetPathList';
   static const String mGetAssetListPaged = 'getAssetListPaged';
@@ -32,6 +32,7 @@ class PMConstants {
   static const String mNotify = 'notify';
   static const String mForceOldApi = 'forceOldApi';
   static const String mDeleteWithIds = 'deleteWithIds';
+  static const String mMoveToTrash = 'moveToTrash';
   static const String mSaveImage = 'saveImage';
   static const String mSaveImageWithPath = 'saveImageWithPath';
   static const String mSaveVideo = 'saveVideo';

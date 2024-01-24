@@ -6,13 +6,10 @@
 #import "PMCacheContainer.h"
 #import "PMConvertUtils.h"
 #import "PMFolderUtils.h"
-#import "PMFilterOption.h"
 #import "PMImageUtil.h"
-#import "PMLogUtils.h"
 #import "PMManager.h"
 #import "PMMD5Utils.h"
-#import "PMRequestTypeUtils.h"
-#import "PMThumbLoadOption.h"
+#import "PMPathFilterOption.h"
 
 
 @implementation UIImage (Crop)
@@ -28,7 +25,6 @@
 
 
 @implementation PMManager {
-    BOOL __isAuth;
     PMCacheContainer *cacheContainer;
 
     PHCachingImageManager *__cachingManager;
@@ -37,19 +33,9 @@
 - (instancetype)init {
     self = [super init];
     if (self) {
-        __isAuth = NO;
         cacheContainer = [PMCacheContainer new];
     }
-
     return self;
-}
-
-- (BOOL)isAuth {
-    return __isAuth;
-}
-
-- (void)setAuth:(BOOL)auth {
-    __isAuth = auth;
 }
 
 - (PHCachingImageManager *)cachingManager {
@@ -60,22 +46,24 @@
     return __cachingManager;
 }
 
-- (NSArray<PMAssetPathEntity *> *)getAssetPathList:(int)type hasAll:(BOOL)hasAll onlyAll:(BOOL)onlyAll option:(NSObject<PMBaseFilter> *)option {
+- (NSArray<PMAssetPathEntity *> *)getAssetPathList:(int)type hasAll:(BOOL)hasAll onlyAll:(BOOL)onlyAll option:(NSObject <PMBaseFilter> *)option pathFilterOption:(PMPathFilterOption *)pathFilterOption {
     NSMutableArray<PMAssetPathEntity *> *array = [NSMutableArray new];
     PHFetchOptions *assetOptions = [self getAssetOptions:type filterOption:option];
     PHFetchOptions *fetchCollectionOptions = [PHFetchOptions new];
 
     PHFetchResult<PHAssetCollection *> *smartAlbumResult = [PHAssetCollection
-                                                            fetchAssetCollectionsWithType:PHAssetCollectionTypeSmartAlbum
-                                                            subtype:PHAssetCollectionSubtypeAny
-                                                            options:fetchCollectionOptions];
+        fetchAssetCollectionsWithType:PHAssetCollectionTypeSmartAlbum
+                              subtype:PHAssetCollectionSubtypeAny
+                              options:fetchCollectionOptions];
     if (onlyAll) {
         if (smartAlbumResult && smartAlbumResult.count) {
             for (PHAssetCollection *collection in smartAlbumResult) {
                 if (collection.assetCollectionSubtype == PHAssetCollectionSubtypeSmartAlbumUserLibrary) {
                     PMAssetPathEntity *pathEntity = [PMAssetPathEntity
-                                                     entityWithId:collection.localIdentifier
-                                                     name:collection.localizedTitle];
+                        entityWithId:collection.localIdentifier
+                                name:collection.localizedTitle
+                     assetCollection:collection
+                    ];
                     pathEntity.isAll = YES;
                     [array addObject:pathEntity];
                     break;
@@ -84,23 +72,6 @@
         }
         return array;
     }
-    [self logCollections:smartAlbumResult option:assetOptions];
-    [self injectAssetPathIntoArray:array
-                            result:smartAlbumResult
-                           options:assetOptions
-                            hasAll:hasAll
-                  containsModified:option.containsModified];
-
-//    PHFetchResult<PHAssetCollection *> *albumResult = [PHAssetCollection
-//                                                       fetchAssetCollectionsWithType:PHAssetCollectionTypeAlbum
-//                                                       subtype:PHAssetCollectionSubtypeAny
-//                                                       options:fetchCollectionOptions];
-//    [self logCollections:albumResult option:assetOptions];
-//    [self injectAssetPathIntoArray:array
-//                            result:albumResult
-//                           options:assetOptions
-//                            hasAll:hasAll
-//                  containsModified:option.containsModified];
 
     PHFetchResult<PHCollection *> *topLevelResult = [PHAssetCollection fetchTopLevelUserCollectionsWithOptions:fetchCollectionOptions];
     [self injectAssetPathIntoArray:array
@@ -109,6 +80,30 @@
                             hasAll:hasAll
                   containsModified:option.containsModified];
 
+    if ([pathFilterOption.type indexOfObject:@(PHAssetCollectionTypeSmartAlbum)] != NSNotFound) {
+        [self logCollections:smartAlbumResult option:assetOptions];
+        [self injectAssetPathIntoArray:array
+                                result:smartAlbumResult
+                               options:assetOptions
+                                hasAll:hasAll
+                      containsModified:option.containsModified
+                      pathFilterOption:pathFilterOption
+        ];
+    }
+
+    if ([pathFilterOption.type indexOfObject:@(PHAssetCollectionTypeAlbum)] != NSNotFound) {
+        PHFetchResult<PHAssetCollection *> *albumResult = [PHAssetCollection
+            fetchAssetCollectionsWithType:PHAssetCollectionTypeAlbum
+                                  subtype:PHAssetCollectionSubtypeAny
+                                  options:fetchCollectionOptions];
+        [self logCollections:albumResult option:assetOptions];
+        [self injectAssetPathIntoArray:array
+                                result:albumResult
+                               options:assetOptions
+                                hasAll:hasAll
+                      containsModified:option.containsModified
+                      pathFilterOption:pathFilterOption];
+    }
     return array;
 }
 
@@ -153,7 +148,7 @@
     PHFetchResult<PHAsset *> *result = [PHAsset fetchAssetsWithOptions:options];
     
     NSUInteger endOffset = end;
-    if (endOffset < result.count) {
+    if (endOffset > result.count) {
         endOffset = result.count;
     }
     
@@ -205,7 +200,8 @@
                           result:(PHFetchResult *)result
                          options:(PHFetchOptions *)options
                           hasAll:(BOOL)hasAll
-                containsModified:(BOOL)containsModified {
+                containsModified:(BOOL)containsModified
+                pathFilterOption:(PMPathFilterOption *)pathFilterOption {
     for (id collection in result) {
         // NSLog(@"collection: %@", collection);
         // we are not currently getting folders. we used to be calling PHFetchResult<PHCollection *> *topLevelResult = [PHAssetCollection fetchTopLevelUserCollectionsWithOptions:fetchCollectionOptions];
@@ -223,11 +219,11 @@
 
         PHAssetCollection *assetCollection = (PHAssetCollection *) collection;
 
-        // Check whether it's "Recently Deleted"
-        if (assetCollection.assetCollectionSubtype == PHAssetCollectionSubtypeSmartAlbumRecentlyAdded
-            || assetCollection.assetCollectionSubtype == 1000000201) {
-            continue;
-        }
+//        // Check whether it's "Recently Deleted"
+//        if (assetCollection.assetCollectionSubtype == PHAssetCollectionSubtypeSmartAlbumRecentlyAdded
+//            || assetCollection.assetCollectionSubtype == 1000000201) {
+//            continue;
+//        }
 
         // Check nullable id and name
         NSString *localIdentifier = assetCollection.localIdentifier;
@@ -236,7 +232,9 @@
             continue;
         }
 
-        PMAssetPathEntity *entity = [PMAssetPathEntity entityWithId:localIdentifier name:localizedTitle];
+//        [[PMLogUtils sharedInstance] debug:[NSString stringWithFormat:@"id: %@, title: %@, type: %d subType: %d", localIdentifier, localizedTitle, (int)assetCollection.assetCollectionType, (int)assetCollection.assetCollectionSubtype]];
+
+        PMAssetPathEntity *entity = [PMAssetPathEntity entityWithId:localIdentifier name:localizedTitle assetCollection:assetCollection];
         entity.isAll = assetCollection.assetCollectionSubtype == PHAssetCollectionSubtypeSmartAlbumUserLibrary;
 
         if (containsModified) {
@@ -248,10 +246,15 @@
             }
         }
 
-        if (!hasAll && entity.isAll) {
+        if (hasAll && entity.isAll) {
+            [array addObject:entity];
             continue;
         }
-        [array addObject:entity];
+
+        if ([pathFilterOption.subType indexOfObject:@(PHAssetCollectionSubtypeAny)] != NSNotFound ||
+            [pathFilterOption.subType indexOfObject:@(assetCollection.assetCollectionSubtype)] != NSNotFound) {
+            [array addObject:entity];
+        }
     }
 }
 
@@ -523,7 +526,13 @@
     if (entity && entity.phAsset) {
         PHAsset *asset = entity.phAsset;
         if (@available(iOS 9.1, *)) {
-            if (asset.isLivePhoto && subtype == PHAssetMediaSubtypePhotoLive) {
+            if (asset.isLivePhoto && (subtype & PHAssetMediaSubtypePhotoLive) == PHAssetMediaSubtypePhotoLive) {
+                [self fetchLivePhotosFile:asset handler:handler progressHandler:progressHandler];
+                return;
+            }
+        }
+        if (@available(macOS 14.0, *)) {
+            if (asset.isLivePhoto && (subtype & PHAssetMediaSubtypePhotoLive) == PHAssetMediaSubtypePhotoLive) {
                 [self fetchLivePhotosFile:asset handler:handler progressHandler:progressHandler];
                 return;
             }
@@ -754,6 +763,7 @@
                          resource:(PHAssetResource *)resource
                          isOrigin:(Boolean)isOrigin
                           manager:(NSFileManager *)manager {
+    NSString *id = [asset.localIdentifier stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
     NSString *modifiedDate = [NSString stringWithFormat:@"%f", asset.modificationDate.timeIntervalSince1970];
     NSString *homePath = NSTemporaryDirectory();
     NSMutableString *path = [NSMutableString stringWithString:homePath];
@@ -763,7 +773,7 @@
     } else {
         filename = [asset valueForKey:@"filename"];
     }
-    filename = [NSString stringWithFormat:@"%@%@_%@", modifiedDate, isOrigin ? @"_o" : @"", filename];
+    filename = [NSString stringWithFormat:@"%@_%@%@_%@", id, modifiedDate, isOrigin ? @"_o" : @"", filename];
     NSString *typeDirPath;
     if (resource) {
         typeDirPath = resource.isImage ? PM_IMAGE_CACHE_PATH : PM_VIDEO_CACHE_PATH;
@@ -776,7 +786,7 @@
     }
     [manager createDirectoryAtPath:dirPath withIntermediateDirectories:true attributes:@{} error:nil];
     [path appendFormat:@"%@/%@", typeDirPath, filename];
-    [PMLogUtils.sharedInstance info: [NSString stringWithFormat:@"PHAsset path = %@", path]];
+    [PMLogUtils.sharedInstance info:[NSString stringWithFormat:@"PHAsset path = %@", path]];
     return path;
 }
 
@@ -902,11 +912,11 @@
     ![info[PHImageResultIsDegradedKey] boolValue]; // thumbnail
 }
 
-- (PMAssetPathEntity *)fetchPathProperties:(NSString *)id type:(int)type filterOption:(NSObject<PMBaseFilter> *)filterOption {
+- (PMAssetPathEntity *)fetchPathProperties:(NSString *)id type:(int)type filterOption:(NSObject <PMBaseFilter> *)filterOption {
     PHFetchOptions *collectionFetchOptions = [PHFetchOptions new];
     PHFetchResult<PHAssetCollection *> *result = [PHAssetCollection
-                                                  fetchAssetCollectionsWithLocalIdentifiers:@[id]
-                                                  options:collectionFetchOptions];
+        fetchAssetCollectionsWithLocalIdentifiers:@[id]
+                                          options:collectionFetchOptions];
 
     if (result == nil || result.count == 0) {
         return nil;
@@ -920,7 +930,9 @@
         return nil;
     }
     PMAssetPathEntity *entity = [PMAssetPathEntity entityWithId:localIdentifier
-                                                           name:localizedTitle];
+                                                           name:localizedTitle
+                                                assetCollection:collection
+    ];
     entity.isAll = collection.assetCollectionSubtype == PHAssetCollectionSubtypeSmartAlbumUserLibrary;
     return entity;
 }

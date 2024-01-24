@@ -4,14 +4,15 @@
 ///
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:photo_manager_image_provider/photo_manager_image_provider.dart';
 import 'package:video_player/video_player.dart';
 
 class LivePhotosWidget extends StatefulWidget {
   const LivePhotosWidget({
-    Key? key,
+    super.key,
     required this.entity,
     required this.useOrigin,
-  }) : super(key: key);
+  });
 
   final AssetEntity entity;
   final bool useOrigin;
@@ -41,8 +42,8 @@ class _LivePhotosWidgetState extends State<LivePhotosWidget> {
     if (!mounted || url == null) {
       return;
     }
-    _controller = VideoPlayerController.network(
-      url,
+    _controller = VideoPlayerController.networkUrl(
+      Uri.parse(url),
       videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
     )
       ..initialize()

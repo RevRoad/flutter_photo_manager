@@ -7,6 +7,7 @@ import 'dart:io';
 import 'dart:typed_data' as typed_data;
 
 import 'package:flutter/services.dart';
+import 'package:photo_manager/src/filter/path_filter.dart';
 
 import '../filter/base_filter.dart';
 import '../filter/classical/filter_option_group.dart';
@@ -31,6 +32,7 @@ class PhotoManagerPlugin with BasePlugin, IosPlugin, AndroidPlugin {
     bool onlyAll = false,
     RequestType type = RequestType.common,
     PMFilter? filterOption,
+    required PMPathFilter pathFilterOption,
   }) async {
     if (onlyAll) {
       assert(hasAll, 'If only is true, then the hasAll must be not null.');
@@ -58,6 +60,7 @@ class PhotoManagerPlugin with BasePlugin, IosPlugin, AndroidPlugin {
         'hasAll': hasAll,
         'onlyAll': onlyAll,
         'option': filterOption.toMap(),
+        "pathOption": pathFilterOption.toMap(),
       },
     );
     if (result == null) {
@@ -66,7 +69,7 @@ class PhotoManagerPlugin with BasePlugin, IosPlugin, AndroidPlugin {
     return ConvertUtils.convertToPathList(
       result.cast<String, dynamic>(),
       type: type,
-      optionGroup: filterOption,
+      filterOption: filterOption,
     );
   }
 
@@ -81,12 +84,6 @@ class PhotoManagerPlugin with BasePlugin, IosPlugin, AndroidPlugin {
   }
 
   Future<int> getAssetCountFromPath(AssetPathEntity path) async {
-    // Use `assetCount` for Android until we break the API
-    // and migrate to `InternalAssetPathEntity`.
-    if (Platform.isAndroid) {
-      // ignore: deprecated_member_use_from_same_package
-      return path.assetCount;
-    }
     final int result = await _channel.invokeMethod<int>(
       PMConstants.mGetAssetCountFromPath,
       <String, dynamic>{
@@ -254,6 +251,17 @@ class PhotoManagerPlugin with BasePlugin, IosPlugin, AndroidPlugin {
     return deleted.cast<String>();
   }
 
+  Future<List<String>> moveToTrash(List<AssetEntity> list) {
+    return _channel.invokeMethod(
+      PMConstants.mMoveToTrash,
+      <String, dynamic>{'ids': list.map((e) => e.id).toList()},
+    ).then((value) => value.cast<String>());
+  }
+
+  final Map<String, dynamic> onlyAddPermission = <String, dynamic>{
+    'onlyAddPermission': true,
+  };
+
   Future<AssetEntity?> saveImage(
     typed_data.Uint8List data, {
     required String? title,
@@ -267,6 +275,7 @@ class PhotoManagerPlugin with BasePlugin, IosPlugin, AndroidPlugin {
         'title': title,
         'desc': desc ?? '',
         'relativePath': relativePath,
+        ...onlyAddPermission,
       },
     );
     if (result == null) {
@@ -296,6 +305,7 @@ class PhotoManagerPlugin with BasePlugin, IosPlugin, AndroidPlugin {
         'title': title,
         'desc': desc ?? '',
         'relativePath': relativePath,
+        ...onlyAddPermission,
       },
     );
     if (result == null) {
@@ -324,6 +334,7 @@ class PhotoManagerPlugin with BasePlugin, IosPlugin, AndroidPlugin {
         'title': title,
         'desc': desc ?? '',
         'relativePath': relativePath,
+        ...onlyAddPermission,
       },
     );
     if (result == null) {
@@ -358,6 +369,7 @@ class PhotoManagerPlugin with BasePlugin, IosPlugin, AndroidPlugin {
         'title': title,
         'desc': desc ?? '',
         'relativePath': relativePath,
+        ...onlyAddPermission,
       },
     );
     if (result == null) {
@@ -447,7 +459,7 @@ class PhotoManagerPlugin with BasePlugin, IosPlugin, AndroidPlugin {
     return ConvertUtils.convertToPathList(
       items.cast<String, dynamic>(),
       type: pathEntity.type,
-      optionGroup: pathEntity.filterOption,
+      filterOption: pathEntity.filterOption,
     );
   }
 
@@ -530,10 +542,12 @@ class PhotoManagerPlugin with BasePlugin, IosPlugin, AndroidPlugin {
     );
   }
 
-  Future<void> presentLimited() async {
-    assert(Platform.isIOS);
-    if (Platform.isIOS) {
-      return _channel.invokeMethod(PMConstants.mPresentLimited);
+  Future<void> presentLimited(RequestType type) async {
+    assert(Platform.isIOS || Platform.isAndroid);
+    if (Platform.isIOS || Platform.isAndroid) {
+      return _channel.invokeMethod(PMConstants.mPresentLimited, {
+        'type': type.value,
+      });
     }
   }
 

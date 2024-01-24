@@ -23,7 +23,7 @@ if (flutterVersionName == null) {
 
 def compileVersion = localProperties.getProperty('android.version')
 if (compileVersion == null) {
-    compileVersion = "33"
+    compileVersion = "34"
 }
 
 apply plugin: 'com.android.application'
@@ -32,6 +32,8 @@ apply plugin: 'kotlin-kapt'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
+    namespace 'com.fluttercandies.photo_manager_example'
+
     compileSdkVersion compileVersion.toInteger()
 
     signingConfigs {
@@ -41,6 +43,15 @@ android {
             keyAlias 'key0'
             keyPassword '123456'
         }
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.current()
+        targetCompatibility JavaVersion.current()
     }
 
     sourceSets {

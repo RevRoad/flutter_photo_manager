@@ -11,10 +11,10 @@ import 'dialog/list_dialog.dart';
 
 class GalleryItemWidget extends StatelessWidget {
   const GalleryItemWidget({
-    Key? key,
+    super.key,
     required this.path,
     required this.setState,
-  }) : super(key: key);
+  });
 
   final AssetPathEntity path;
   final ValueSetter<VoidCallback> setState;
@@ -71,6 +71,23 @@ class GalleryItemWidget extends StatelessWidget {
                 child: const Text('Show modified date'),
                 onPressed: () async {
                   showToast('modified date = ${item.lastModified}');
+                },
+              ),
+              ElevatedButton(
+                child: const Text('Show properties for PathEntity in console.'),
+                onPressed: () async {
+                  String buffer = '';
+
+                  buffer += 'name = ${item.name}\n';
+                  buffer += 'type = ${item.type}\n';
+                  buffer += 'isAll = ${item.isAll}\n';
+                  buffer += 'albumType = ${item.albumType}\n';
+                  buffer += 'darwinType = ${item.darwinType}\n';
+                  buffer += 'darwinSubType = ${item.darwinSubtype}\n';
+                  buffer += 'assetCount = ${await item.assetCountAsync}\n';
+                  buffer += 'id = ${item.id}\n';
+
+                  print(buffer);
                 },
               ),
             ],

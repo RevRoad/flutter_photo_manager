@@ -8,6 +8,7 @@
 library photo_manager;
 
 export 'src/filter/base_filter.dart';
+export 'src/filter/path_filter.dart';
 export 'src/filter/classical/filter_option_group.dart';
 export 'src/filter/classical/filter_options.dart';
 
@@ -18,7 +19,6 @@ export 'src/filter/custom/order_by_item.dart';
 
 export 'src/internal/enums.dart';
 export 'src/internal/extensions.dart';
-export 'src/internal/image_provider.dart';
 export 'src/internal/plugin.dart' show PhotoManagerPlugin;
 export 'src/internal/progress_handler.dart';
 
