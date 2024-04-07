@@ -78,7 +78,9 @@
                             result:topLevelResult
                            options:assetOptions
                             hasAll:hasAll
-                  containsModified:option.containsModified];
+                  containsModified:option.containsModified
+                  pathFilterOption:pathFilterOption
+    ];
 
     if ([pathFilterOption.type indexOfObject:@(PHAssetCollectionTypeSmartAlbum)] != NSNotFound) {
         [self logCollections:smartAlbumResult option:assetOptions];
