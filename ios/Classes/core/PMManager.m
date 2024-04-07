@@ -73,14 +73,14 @@
         return array;
     }
 
-    PHFetchResult<PHCollection *> *topLevelResult = [PHAssetCollection fetchTopLevelUserCollectionsWithOptions:fetchCollectionOptions];
-    [self injectAssetPathIntoArray:array
-                            result:topLevelResult
-                           options:assetOptions
-                            hasAll:hasAll
-                  containsModified:option.containsModified
-                  pathFilterOption:pathFilterOption
-    ];
+     PHFetchResult<PHCollection *> *topLevelResult = [PHAssetCollection fetchTopLevelUserCollectionsWithOptions:fetchCollectionOptions];
+     [self injectAssetPathIntoArray:array
+                             result:topLevelResult
+                            options:assetOptions
+                             hasAll:hasAll
+                   containsModified:option.containsModified
+                   pathFilterOption:pathFilterOption
+     ];
 
     if ([pathFilterOption.type indexOfObject:@(PHAssetCollectionTypeSmartAlbum)] != NSNotFound) {
         [self logCollections:smartAlbumResult option:assetOptions];
@@ -93,19 +93,21 @@
         ];
     }
 
-    if ([pathFilterOption.type indexOfObject:@(PHAssetCollectionTypeAlbum)] != NSNotFound) {
-        PHFetchResult<PHAssetCollection *> *albumResult = [PHAssetCollection
-            fetchAssetCollectionsWithType:PHAssetCollectionTypeAlbum
-                                  subtype:PHAssetCollectionSubtypeAny
-                                  options:fetchCollectionOptions];
-        [self logCollections:albumResult option:assetOptions];
-        [self injectAssetPathIntoArray:array
-                                result:albumResult
-                               options:assetOptions
-                                hasAll:hasAll
-                      containsModified:option.containsModified
-                      pathFilterOption:pathFilterOption];
-    }
+//    commented this out because we get folders and top-level albums separately
+//    if ([pathFilterOption.type indexOfObject:@(PHAssetCollectionTypeAlbum)] != NSNotFound) {
+//        PHFetchResult<PHAssetCollection *> *albumResult = [PHAssetCollection
+//            fetchAssetCollectionsWithType:PHAssetCollectionTypeAlbum
+//                                  subtype:PHAssetCollectionSubtypeAny
+//                                  options:fetchCollectionOptions];
+//        [self logCollections:albumResult option:assetOptions];
+//        [self injectAssetPathIntoArray:array
+//                                result:albumResult
+//                               options:assetOptions
+//                                hasAll:hasAll
+//                      containsModified:option.containsModified
+//                      pathFilterOption:pathFilterOption];
+//    }
+
     return array;
 }
 
