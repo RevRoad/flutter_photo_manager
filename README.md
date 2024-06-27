@@ -17,7 +17,7 @@ English | [中文](README-ZH.md)
 <a target="_blank" href="https://jq.qq.com/?_wv=1027&k=5bcc0gy"><img border="0" src="https://pub.idqqimg.com/wpa/images/group.png" alt="FlutterCandies" title="FlutterCandies"></a>
 
 A Flutter plugin that provides assets abstraction management APIs without UI integration,
-you can get assets (image/video/audio) on Android, iOS and macOS.
+you can get assets (image/video/audio) on Android, iOS, macOS and OpenHarmony.
 
 ## Projects using this plugin
 
@@ -39,7 +39,7 @@ see the [migration guide](MIGRATION_GUIDE.md) for detailed info.
   <summary>TOC</summary>
 
 <!-- TOC -->
-* [photo_manager](#photomanager)
+* [photo_manager](#photo_manager)
   * [Projects using this plugin](#projects-using-this-plugin)
   * [Articles about this plugin](#articles-about-this-plugin)
   * [Migration guide](#migration-guide)
@@ -57,7 +57,7 @@ see the [migration guide](MIGRATION_GUIDE.md) for detailed info.
     * [Request for permission](#request-for-permission)
       * [Limited entities access](#limited-entities-access)
         * [Limited entities access on iOS](#limited-entities-access-on-ios)
-        * [Limited entities access on android](#limited-entities-access-on-android)
+        * [Limited entities access on Android](#limited-entities-access-on-android)
     * [Get albums/folders (`AssetPathEntity`)](#get-albumsfolders-assetpathentity)
       * [Params of `getAssetPathList`](#params-of-getassetpathlist)
       * [PMPathFilterOption](#pmpathfilteroption)
@@ -105,6 +105,7 @@ see the [migration guide](MIGRATION_GUIDE.md) for detailed info.
         * [Create an album](#create-an-album)
         * [Remove the entity entry from the album](#remove-the-entity-entry-from-the-album)
         * [Delete `AssetPathEntity`](#delete-assetpathentity)
+      * [Features for OpenHarmony](#features-for-openharmony)
 <!-- TOC -->
 
 </details>
@@ -262,7 +263,17 @@ accessible entities' management.
 This method only available for iOS 14+ and when the permission state
 is limited (`PermissionState.limited`).
 
-##### Limited entities access on android
+To suppress the automatic prompting from the system
+when each time you access the media after the app has restarted,
+you can set the `Prevent limited photos access alert` key to `YES`
+in your app's `Info.plist` (or manually writing as below):
+
+```plist
+<key>PHPhotoLibraryPreventAutomaticLimitedAccessAlert</key>
+<true/>
+```
+
+##### Limited entities access on Android
 
 Android 14 (API 34) has also introduced the concept of limited assets similar to iOS.
 
@@ -285,12 +296,12 @@ See [`getAssetPathList`][] for more detail.
 
 #### Params of `getAssetPathList`
 
-| Name             | Description                                                  | Default value           |
-| :--------------- | ------------------------------------------------------------ | ----------------------- |
-| hasAll           | Set to true when you need an album containing all assets.    | true                    |
-| onlyAll          | Use this property if you only need one album containing all assets. | false                   |
-| type             | Type of media resource (video, image, audio)                 | RequestType.common      |
-| filterOption     | Used to filter resource files, see [Filtering](#filtering) for details | FilterOptionGroup()     |
+| Name             | Description                                                                                                                    | Default value           |
+|:-----------------|--------------------------------------------------------------------------------------------------------------------------------|-------------------------|
+| hasAll           | Set to true when you need an album containing all assets.                                                                      | true                    |
+| onlyAll          | Use this property if you only need one album containing all assets.                                                            | false                   |
+| type             | Type of media resource (video, image, audio)                                                                                   | RequestType.common      |
+| filterOption     | Used to filter resource files, see [Filtering](#filtering) for details                                                         | FilterOptionGroup()     |
 | pathFilterOption | Only valid for iOS and macOS, for the corresponding album type. See [PMPathFilterOption](#pmpathfilteroption) for more detail. | Include all by default. |
 
 #### PMPathFilterOption
@@ -775,8 +786,9 @@ if you want to know more about using ProGuard and Glide together.
 
 #### Android 14 (API 34) extra configs
 
-When targeting Android 14 (API level 34),
-the following extra configs needs to be added to the manifest:
+When running on Android 14 (API level 34),
+the following permissions needs to be added to the manifest
+even if your `targetSdkVersion` and `compileSdkVersion` is not `34`:
 
 ```xml
 <manifest>
@@ -786,8 +798,9 @@ the following extra configs needs to be added to the manifest:
 
 #### Android 13 (API 33) extra configs
 
-When targeting Android 13 (API level 33),
-the following extra configs needs to be added to the manifest:
+When running on Android 13 (API level 33),
+the following permissions needs to be added to the manifest
+even if your `targetSdkVersion` and `compileSdkVersion` is not `33`:
 
 ```xml
 <manifest>
@@ -986,6 +999,18 @@ Smart albums can't be deleted.
 ```dart
 PhotoManager.editor.darwin.deletePath();
 ```
+
+#### Features for OpenHarmony
+
+Currently, most functions are supported, except for those related to caching. and only support image and video types.
+
+| Feature                        | OpenHarmony |
+| :----------------------------- | :---------: |
+| releaseCache                   |      ❌      |
+| clearFileCache                 |      ❌      |
+| requestCacheAssetsThumbnail    |      ❌      |
+| getSubPathEntities             |      ❌      |
+
 
 [pub package]: https://pub.dev/packages/photo_manager
 [repo]: https://github.com/fluttercandies/flutter_photo_manager

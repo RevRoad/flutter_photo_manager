@@ -215,6 +215,7 @@ class PhotoProvider extends ChangeNotifier {
       ..setOption(AssetType.audio, option)
       ..createTimeCond = createDtCond
       ..containsPathModified = _containsPathModified
+      // ignore: deprecated_member_use
       ..containsLivePhotos = _containsLivePhotos
       ..onlyLivePhotos = onlyLivePhotos;
   }
@@ -247,8 +248,9 @@ class PhotoProvider extends ChangeNotifier {
   }
 
   /// For path filter option
-  var _pathFilterOption = const PMPathFilter();
   PMPathFilter get pathFilterOption => _pathFilterOption;
+  PMPathFilter _pathFilterOption = const PMPathFilter();
+
   List<PMDarwinAssetCollectionType> _pathTypeList =
       PMDarwinAssetCollectionType.values;
 

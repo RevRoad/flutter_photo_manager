@@ -6,41 +6,70 @@ that can be found in the LICENSE file. -->
 
 To know more about breaking changes, see the [Migration Guide][].
 
-## 3.0.0-dev.5
+## 3.2.0
+
+### Improvements
+
+* Restores `containsLivePhotos` to `true` by default and deprecates it.
+* Use the main resource's filename for title by default on iOS.
+* Support more methods on the OpenHarmony.
 
 ### Fixes
 
-- Fix `requestPermissionExtend` returns the incorrect status on Android API 34.
+* Fix obtaining the correct resource from various types of resources on iOS.
+* Fix `isLocallyAvailable` for edited assets on iOS.
 
-## 3.0.0-dev.4
+## 3.1.1
+
+### Improvements
+
+* Update plugin structure for OpenHarmony.
+
+## 3.1.0
+
+### Breaking changes
+
+- `AssetPathEntity.darwinType` and `AssetPathEntity.darwinSubtype` are deprecated.
+- `containsLivePhotos` now defaults to `false`.
+
+See the [Migration Guide][] for details of breaking changes.
+
+### Features
+
+- Support OpenHarmony.
 
 ### Fixes
 
-- Fix `presentLimit` did not finish on Android. (#1052)
+- Do not predicate subtypes images as adjusted on Darwin.
+- Fix `PMProgressHandler` not getting notified when failed on Darwin.
+- Merge Android API 29 and 30 `PermissionDelegate`s
+  which allows Android API 29 to grant permissions without `WRITE_EXTERNAL_STORAGE`.
 
-## 3.0.0-dev.3
+### Improvements
 
-### Fixes
+- Improve code formatting.
+- Add privacy file for iOS/macOS. (#1120)
 
-- Dispatch channel calls in main thread on Darwin.
-
-## 3.0.0-dev.2
-
-### Fixes
-
-- Fix `PhotoManager.editor.deleteWithIds` method not working on Android API 29.
-
-## 3.0.0-dev.1
+## 3.0.0
 
 ### Breaking changes
 
 See the [Migration Guide][] for details of breaking changes.
 
+### Improvements
+
+- Remove the restriction of `getMediaUrl`.
+
+### Fixes
+
+- Fix `PhotoManager.editor.deleteWithIds` method not working on Android API 29.
+- Dispatch channel calls in main thread on Darwin.
+- Fix `presentLimit` did not finish on Android. (#1052)
+- Fix `requestPermissionExtend` returns the incorrect status on Android API 34.
+
 ## 2.8.1
 
-### Feature
-
-Fix:
+### Fixes
 
 - Upgrade android/build.gradle to load current java version from some environment variables.
 - Fix the `setIgnorePermissionCheck` method not working on Android.
